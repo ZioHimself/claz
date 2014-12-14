@@ -19,6 +19,19 @@
     </dependency>
   </dependencies>
 
+  <profiles>
+    <profile>
+      <id>MVN_MINIFY</id>
+      <dependencies>
+        <dependency>
+          <groupId>com.samaxes.maven</groupId>
+          <artifactId>minify-maven-plugin</artifactId>
+          <version>${minify-maven-plugin.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+
   <build>
     <resources>
       <resource>
@@ -52,6 +65,32 @@
       </plugin>
 
       <!--
+          see src & doc @ http://samaxes.github.io/minify-maven-plugin
+      -->
+      <plugin>
+        <groupId>com.samaxes.maven</groupId>
+        <artifactId>minify-maven-plugin</artifactId>
+        <version>${minify-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>default-minify</id>
+            <configuration>
+              <webappSourceDir>${basedir}/src/main</webappSourceDir>
+              <jsSourceDir>resources</jsSourceDir>
+              <jsSourceFiles>
+                <jsSourceFile>claz.js</jsSourceFile>
+              </jsSourceFiles>
+              <jsEngine>CLOSURE</jsEngine>
+              <closureCreateSourceMap>true</closureCreateSourceMap>
+            </configuration>
+            <goals>
+              <goal>minify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!--
           see src & doc @ https://github.com/phasebash/jsdoc3-maven-plugin
       -->
       <plugin>
@@ -77,5 +116,6 @@
     <requirejs-maven-plugin.version>2.0.4</requirejs-maven-plugin.version>
     <jsdoc3-maven-plugin.version>1.1.0</jsdoc3-maven-plugin.version>
     <qunit-maven-plugin.version>1.15</qunit-maven-plugin.version>
+    <minify-maven-plugin.version>1.7.4</minify-maven-plugin.version>
   </properties>
 </project>

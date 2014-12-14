@@ -11,7 +11,6 @@
         module.exports = factory(require('underscore'));
     }
     function _defineViaAmd() {
-        //noinspection JSUnresolvedFunction
         define(['underscore'], factory);
     }
     function _commonjsDefine() {
@@ -30,7 +29,6 @@
         // Node
         return _defineNodeExports()
     }
-    //noinspection JSUnresolvedVariable
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
         return _defineViaAmd()
@@ -38,6 +36,82 @@
     // Browser globals (root is window)
     return _commonjsDefine()
 })(this, function(_){
+    /**
+     * @param {function} [initFn] (optional parameter) - function, called on an object construction
+     * @param {object} members (obligatory parameter) - A plain object, containing member definitions - member name as property key and member as property value
+     * @returns {function} - the resulting class constructor function
+     * */
+    function claz(initFn, members) {
+        if (arguments.length === 1) {
+            members = arguments[0];
+        }
+        if (!_isPlainObject(members)) {
+            throw new TypeError('unsupported members type!')
+        }
+
+        var _initFnOrNull = _getInitFnOrNull(initFn, members);
+        var _publicMembers = _getPublicMembers(members);
+        function Conztructor(){
+            var self = _.extend({}, members);
+            if (_.isFunction(_initFnOrNull)) {
+                _initFnOrNull.apply(self, arguments)
+            }
+            _.each(_publicMembers, function(member, memberName){
+                if (_.isFunction(member)) {
+                    this[memberName] = _.bind(member, self);
+                    return
+                }
+                this[memberName] = self[memberName]
+            })
+        }
+
+        _.extend(Conztructor.prototype, _publicMembers);
+        return Conztructor
+    }
+    function _isPlainObject(obj) {
+        return _toString.call(obj) === '[object Object]'
+    }
+    /**
+     * @param {object} members - a plain object, containing member definitions - member name as property key and member as property value
+     * @returns {object} - a plain object, containing only the keys, which do not start with `_` (underscore character)
+     * */
+    function _getPublicMembers(members) {
+        return _.reduce(
+            members,
+            function(publicMembers, member, memberName) {
+                if(!_.isString(memberName) || /^_/g.test(memberName)) {
+                    return publicMembers;
+                }
+                publicMembers[memberName] = member;
+                return publicMembers
+            },
+            {}
+        )
+    }
+    function _getInitFnOrNull(initFnOrNone, members) {
+        if (_.isFunction(initFnOrNone)) {
+            return initFnOrNone
+        }
+        return _getInitFnFromMembersOrNull(members)
+    }
+    function _getInitFnFromMembersOrNull(members) {
+        var initFn = members.init;
+        if(!_.isFunction(initFn)) {
+            return null
+        }
+        return initFn
+    }
+
+    var _ObjProto = Object.prototype,
+        _toString = _ObjProto.toString;
+
     return {
+        claz: claz,
+
+        /** exposing internals for testing purpose */
+        _isPlainObject: _isPlainObject,
+        _getPublicMembers: _getPublicMembers,
+        _getInitFnOrNull: _getInitFnOrNull,
+        _getInitFnFromMembersOrNull: _getInitFnFromMembersOrNull
     }
 });

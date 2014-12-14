@@ -1,0 +1,81 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.github.ziohimself</groupId>
+  <artifactId>clazjs</artifactId>
+  <version>${ci.version}</version>
+  <packaging>jar</packaging>
+
+  <name>clazjs</name>
+  <url>http://github.com/ziohimself/clazjs</url>
+
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.11</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+    </resources>
+    <plugins>
+
+      <!--
+          see src & doc @ https://bitbucket.org/jaiew/qunit-maven-plugin
+           runs QUnit v1.10
+      -->
+      <plugin>
+        <groupId>com.atlassian.maven.plugins</groupId>
+        <artifactId>qunit-maven-plugin</artifactId>
+        <version>${qunit-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <includes>
+            <include>*/**/*Test.js</include>
+            <include>*Test.js</include>
+          </includes>
+        </configuration>
+      </plugin>
+
+      <!--
+          see src & doc @ https://github.com/phasebash/jsdoc3-maven-plugin
+      -->
+      <plugin>
+        <groupId>com.phasebash.jsdoc</groupId>
+        <artifactId>jsdoc3-maven-plugin</artifactId>
+        <version>${jsdoc3-maven-plugin.version}</version>
+        <configuration>
+          <recursive>false</recursive>
+          <directoryRoots>
+            <directoryRoot>${basedir}/src/main/resources</directoryRoot>
+            <directoryRoot>${basedir}/src/test/resources</directoryRoot>
+          </directoryRoots>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <ci.version>1.0-SNAPSHOT</ci.version>
+
+    <!-- maven plugins -->
+    <requirejs-maven-plugin.version>2.0.4</requirejs-maven-plugin.version>
+    <jsdoc3-maven-plugin.version>1.1.0</jsdoc3-maven-plugin.version>
+    <qunit-maven-plugin.version>1.15</qunit-maven-plugin.version>
+  </properties>
+</project>

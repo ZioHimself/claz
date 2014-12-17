@@ -80,6 +80,9 @@
               <jsSourceFiles>
                 <jsSourceFile>claz.js</jsSourceFile>
               </jsSourceFiles>
+              <webappTargetDir>${project.build.directory}</webappTargetDir>
+              <jsTargetDir>claz</jsTargetDir>
+              <jsFinalFile>claz-${ci.version}.js</jsFinalFile>
               <jsEngine>CLOSURE</jsEngine>
               <closureCreateSourceMap>true</closureCreateSourceMap>
             </configuration>
@@ -104,6 +107,25 @@
             <directoryRoot>${basedir}/src/test/resources</directoryRoot>
           </directoryRoots>
         </configuration>
+      </plugin>
+
+      <!--This plugin will compress all your resources into  your release distributable-->
+      <!--The files that you want compress inside your distributable are specified in a bin.xml file-->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <descriptor>assembly/bin.xml</descriptor>
+          <finalName>claz-${ci.version}</finalName>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

@@ -1,0 +1,37 @@
+<!--See:https://maven.apache.org/plugins/maven-assembly-plugin/component.html-->
+
+<assembly>
+
+    <formats>
+        <format>tar.gz</format>
+        <format>zip</format>
+    </formats>
+
+    <fileSets>
+        <fileSet>
+            <directory>target/classes/lib</directory>
+            <outputDirectory>./lib</outputDirectory>
+            <includes>
+                <include>*.js</include>
+                <include>*.map</include>
+                <include>*.css</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>target/claz</directory>
+            <outputDirectory>.</outputDirectory>
+            <includes>
+                <include>*.js</include>
+                <include>*.map</include>
+                <include>*.css</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>.</directory>
+            <outputDirectory>.</outputDirectory>
+            <includes>
+                <include>LICENSE</include>
+            </includes>
+        </fileSet>
+    </fileSets>
+</assembly>

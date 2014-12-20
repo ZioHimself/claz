@@ -50,22 +50,19 @@
         }
 
         var _initFnOrNull = _getInitFnOrNull(initFn, members);
-        var _publicMembers = _getPublicMembers(members);
+        var _publicMethods = _getPublicMethods(members);
         function Conztructor(){
             var self = _.extend({}, members);
             if (_.isFunction(_initFnOrNull)) {
                 _initFnOrNull.apply(self, arguments)
             }
-            _.each(_publicMembers, function(member, memberName){
-                if (_.isFunction(member)) {
-                    this[memberName] = _.bind(member, self);
-                    return
-                }
-                this[memberName] = self[memberName]
+            var that = this;
+            _.each(_publicMethods, function(member, memberName){
+                that[memberName] = _.bind(member, self);
             })
         }
 
-        _.extend(Conztructor.prototype, _publicMembers);
+        _.extend(Conztructor.prototype, _publicMethods);
         return Conztructor
     }
     function _isPlainObject(obj) {
@@ -73,14 +70,17 @@
     }
     /**
      * @param {object} members - a plain object, containing member definitions - member name as property key and member as property value
-     * @returns {object} - a plain object, containing only the keys, which do not start with `_` (underscore character)
+     * @returns {object} - a plain object, containing only the keys, which do not start with `_` (underscore character) and the values for those keys are functions
      * */
-    function _getPublicMembers(members) {
+    function _getPublicMethods(members) {
         return _.reduce(
             members,
             function(publicMembers, member, memberName) {
                 if(!_.isString(memberName) || /^_/g.test(memberName)) {
-                    return publicMembers;
+                    return publicMembers
+                }
+                if (!_.isFunction(member)) {
+                    return publicMembers
                 }
                 publicMembers[memberName] = member;
                 return publicMembers
@@ -110,7 +110,7 @@
 
         /** exposing internals for testing purpose */
         _isPlainObject: _isPlainObject,
-        _getPublicMembers: _getPublicMembers,
+        _getPublicMembers: _getPublicMethods,
         _getInitFnOrNull: _getInitFnOrNull,
         _getInitFnFromMembersOrNull: _getInitFnFromMembersOrNull
     }

@@ -51,7 +51,7 @@
 
         var _initFnOrNull = _getInitFnOrNull(initFn, members);
         var _publicMethods = _getPublicMethods(members);
-        function Conztructor(){
+        var Ctor = function (){
             var self = _.extend({}, members);
             if (_.isFunction(_initFnOrNull)) {
                 _initFnOrNull.apply(self, arguments)
@@ -60,10 +60,10 @@
             _.each(_publicMethods, function(member, memberName){
                 that[memberName] = _.bind(member, self);
             })
-        }
+        };
 
-        _.extend(Conztructor.prototype, _publicMethods);
-        return Conztructor
+        _.extend(Ctor.prototype, _publicMethods);
+        return Ctor
     }
     function _isPlainObject(obj) {
         return _toString.call(obj) === '[object Object]'

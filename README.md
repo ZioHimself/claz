@@ -3,6 +3,8 @@ claz
 
 ### Another OOP implementation for javascript
 
+#### claz.claz:
+
 ```javascript
 var Person = claz.claz(
     function init(name, age){
@@ -50,4 +52,12 @@ var albert = Person("Albert", 30);
 // albert.getAge() === 30
 // albert.getSummary() === "Albert (30)"
 // albert.getAlias() === "that guy"
+```
+
+#### claz.wiz:
+
+```javascript
+
+// TBD
+
 ```

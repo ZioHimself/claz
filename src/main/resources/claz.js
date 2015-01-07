@@ -210,6 +210,34 @@
         memberz[memberName] = member;
         return memberz
     }
+    function _overridePropCallback(obj, propName, overrideProp, callback) {
+        if (!_.has(obj, propName)) {
+            return _overridePropWithCleanUpCallback(obj, propName, overrideProp, callback, function(obj){
+                delete obj[propName];
+                return obj
+            })
+        }
+        var _prop = obj[propName];
+        _overridePropWithCleanUpCallback(obj, propName, overrideProp, callback, function(obj){
+            obj[propName] = _prop;
+            return obj
+        })
+    }
+    function _overridePropWithCleanUpCallback(obj, propName, overrideProp, callback, cleanUpCallback) {
+        obj[propName] = overrideProp;
+        var _wasNaN = _.isNaN(overrideProp),
+            _wasSame = overrideProp === obj[propName],
+            result = callback(obj),
+            _isNaN = _.isNaN(obj),
+            _isSame = overrideProp === obj[propName];
+        if (_wasNaN !== _isNaN ||
+            _wasSame !== _isSame) {
+            // means, that the property has been overridden within the callback => no cleanup needed
+            return result;
+        }
+        cleanUpCallback(obj);
+        return result
+    }
 
     var _ObjProto = Object.prototype,
         _toString = _ObjProto.toString,
@@ -230,6 +258,8 @@
         _wizMixinMethodsForClaz: _wizMixinMethodsForClaz,
         _wizMixinMethod: _wizMixinMethod,
         _wizMixinMembersForClaz: _wizMixinMembersForClaz,
-        _wizMixinMember: _wizMixinMember
+        _wizMixinMember: _wizMixinMember,
+        _overridePropCallback: _overridePropCallback,
+        _overridePropWithCleanUpCallback: _overridePropWithCleanUpCallback
     }
 });

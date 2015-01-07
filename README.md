@@ -12,7 +12,7 @@ var Person = claz.claz(
         this._summary = this._createSummary(name, age);
     },
     {
-        alias: 'that guy',
+        _alias: 'that guy',
         _createSummary: function(name, age){
             /** one would normally validate {@link name} and {@link age} here ... */
             return name + ' ('+ age +')'
@@ -25,27 +25,29 @@ var Person = claz.claz(
         },
         getAge: function() {
             return this._age
+        },
+        getAlias: function() {
+            return this._alias
         }
     }
 );
 
-var albert = new Person("Albert", 30);
+var albert = Person("Albert", 30);
 
-/** {@link albert} object gets all the public stuff */
+/** {@link albert} object gets all the public methods */
 // typeof albert.getSummary === "function"
 // typeof albert.getName === "function"
 // typeof albert.getAge === "function"
-// typeof albert.alias === "string"
-
-/** here goes the cool part */
-// albert instanceof Person === true
+// typeof albert.getAlias === "function"
 
 /** all the private members are not visible */
 // albert._summary == null
 // albert._createSummary == null
+// albert._alias == null
 
 /** all the public methods are callable */
 // albert.getName() === "Albert"
 // albert.getAge() === 30
 // albert.getSummary() === "Albert (30)"
+// albert.getAlias() === "that guy"
 ```

@@ -56,10 +56,16 @@
             if (_.isFunction(_initFnOrNull)) {
                 _initFnOrNull.apply(self, arguments)
             }
-            var that = this;
-            _.each(_publicMethods, function(member, memberName){
-                that[memberName] = _.bind(member, self);
-            })
+            //noinspection UnnecessaryLocalVariableJS
+            var that = _.reduce(
+                    _publicMethods,
+                    function(publicThis, member, memberName){
+                        publicThis[memberName] = _.bind(member, self);
+                        return publicThis
+                    },
+                    {}
+                );
+            return that
         };
 
         _.extend(Ctor.prototype, _publicMethods);
@@ -75,15 +81,15 @@
     function _getPublicMethods(members) {
         return _.reduce(
             members,
-            function(publicMembers, member, memberName) {
+            function(publicMethods, member, memberName) {
                 if(!_.isString(memberName) || /^_/g.test(memberName)) {
-                    return publicMembers
+                    return publicMethods
                 }
                 if (!_.isFunction(member)) {
-                    return publicMembers
+                    return publicMethods
                 }
-                publicMembers[memberName] = member;
-                return publicMembers
+                publicMethods[memberName] = member;
+                return publicMethods
             },
             {}
         )
@@ -104,6 +110,8 @@
 
     var _ObjProto = Object.prototype,
         _toString = _ObjProto.toString;
+
+
 
     return {
         claz: claz,

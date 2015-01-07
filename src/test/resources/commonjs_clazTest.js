@@ -52,24 +52,13 @@
             'foo source should be the same for members.foo and _Result.prototype.foo'
         );
     });
-    test('claz.claz returned constructor should be possible to use as the right operand for instanceof', function(assert) {
-        //noinspection JSUnusedGlobalSymbols
-        var _Result = claz.claz({}),
-            _result1 = new _Result();
-        assert.ok(
-            _result1 instanceof _Result,
-            '_result1=`'+ _result1 +'` ' +
-            'should be instance of ' +
-            '_Result=`'+ _Result +'` class'
-        )
-    });
     test('claz.claz returned constructor should create objects with all the public variables visible', function(assert) {
         //noinspection JSUnusedGlobalSymbols
         var _members = {
                 foo: function(){}
             },
             _Result = claz.claz(_members),
-            _result1 = new _Result();
+            _result1 = _Result();
 
         var _actualFoo = _result1.foo;
         assert.ok(_actualFoo != null, 'actualMember should be defined, _actualFoo=`'+ _actualFoo +'`');
@@ -108,7 +97,7 @@
                 _bar: function(){}
             },
             _Result = claz.claz(_members),
-            _result1 = new _Result();
+            _result1 = _Result();
 
         var _actualFoo = _result1._foo;
         assert.ok(_.isUndefined(_actualFoo), 'actualMember should be undefined, _actualFoo=`'+ _actualFoo +'`');
@@ -139,7 +128,7 @@
                 }
             },
             _Result = claz.claz(_members);
-        new _Result()
+        _Result()
     });
     test('claz.claz returned constructor should call passed in initFn rather than init member', function(assert) {
         assert.expect( 1 );
@@ -154,7 +143,7 @@
                 },
                 _members
             );
-        new _Result()
+        _Result()
     });
     test('claz.claz returned constructor should have all members visible in the initFn', function(assert) {
         assert.expect( 6 );
@@ -180,7 +169,7 @@
                 },
                 _members
             );
-        new _Result()
+        _Result()
     });
     test('claz.claz returned constructor should create objects, which can access private members in their private methods through their public methods', function(assert) {
         assert.expect( 10 );
@@ -212,7 +201,7 @@
                 }
             },
             _Result = claz.claz(_members),
-            _result = new _Result();
+            _result = _Result();
         _result.qux()
     });
     test('claz.claz returned constructor should create objects, with separate state', function(assert) {
@@ -226,9 +215,9 @@
                 }
             }
         );
-        var _result1 = new _Result(1);
+        var _result1 = _Result(1);
         assert.strictEqual(_result1.bar(), 1, "this.bar() for _result1 should return `1`");
-        var _result2 = new _Result(2);
+        var _result2 = _Result(2);
         assert.strictEqual(_result2.bar(), 2, "this.bar() for _result2 should return `2`");
     });
 })();

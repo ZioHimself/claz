@@ -298,7 +298,23 @@
             );
         assert.ok(_.isFunction(fn), "fn should be a function!")
     });
-    /** uncomment as soon, as make friends with {@link sinon#stub} */
+    /**
+     * uncomment when refactored according to this experiment:
+     *
+     * ```js
+         var foo = {
+              x: 1,
+              getX: function () {
+                return this.x
+              }
+            };
+
+         sinon.stub(foo, 'getX', function(){ return 0 });
+         console.log("stubbed foo.getX()=`"+ foo.getX() +"`");      // stubbed foo.getX()=`0`
+         foo.getX.restore();
+         console.log("unstubbed foo.getX()=`"+ foo.getX() +"`");    // unstubbed foo.getX()=`1`
+     * ```
+     * */
     //test('claz._overridePropOnCall should route to _overridePropDeleteAfterwards if the override property key is not defined for the context object', function(assert) {
     //    assert.expect( 1 );
     //    sinon.stub(claz, '_overridePropDeleteAfterwards', function(){

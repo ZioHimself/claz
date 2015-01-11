@@ -298,60 +298,43 @@
             );
         assert.ok(_.isFunction(fn), "fn should be a function!")
     });
-    /**
-     * uncomment when refactored according to this experiment:
-     *
-     * ```js
-         var foo = {
-              x: 1,
-              getX: function () {
-                return this.x
-              }
-            };
-
-         sinon.stub(foo, 'getX', function(){ return 0 });
-         console.log("stubbed foo.getX()=`"+ foo.getX() +"`");      // stubbed foo.getX()=`0`
-         foo.getX.restore();
-         console.log("unstubbed foo.getX()=`"+ foo.getX() +"`");    // unstubbed foo.getX()=`1`
-     * ```
-     * */
-    //test('claz._overridePropOnCall should route to _overridePropDeleteAfterwards if the override property key is not defined for the context object', function(assert) {
-    //    assert.expect( 1 );
-    //    sinon.stub(claz, '_overridePropDeleteAfterwards', function(){
-    //        assert.ok(true, "_overridePropDeleteAfterwards should be invoked!")
-    //    });
-    //    var _unexpectedPropertyUser = {
-    //            getUnexpectedValue: function(){
-    //                return this.getValue()
-    //            }
-    //        },
-    //        fn = claz._overridePropOnCall(
-    //            _unexpectedPropertyUser.getUnexpectedValue, 'getValue',
-    //            function() { return "unexpected value!" }
-    //        );
-    //    fn.call(_unexpectedPropertyUser);
-    //    claz.restore();
-    //});
-    //test('claz._overridePropOnCall should route to _overridePropPutBackAfterwards if the override property key is defined for the context object', function(assert) {
-    //    assert.expect( 1 );
-    //    sinon.stub(claz, '_overridePropPutBackAfterwards', function(){
-    //        assert.ok(true, "_overridePropPutBackAfterwards should be invoked!")
-    //    });
-    //    var _unexpectedPropertyUser = {
-    //            getValue: function() {
-    //                return "expected value"
-    //            },
-    //            getUnexpectedValue: function(){
-    //                return this.getValue()
-    //            }
-    //        },
-    //        fn = claz._overridePropOnCall(
-    //            _unexpectedPropertyUser.getUnexpectedValue, 'getValue',
-    //            function() { return "unexpected value!" }
-    //        );
-    //    fn.call(_unexpectedPropertyUser);
-    //    claz.restore();
-    //});
+    test('claz._overridePropOnCall should route to _overridePropDeleteAfterwards if the override property key is not defined for the context object', function(assert) {
+        assert.expect( 1 );
+        sinon.stub(claz, '_overridePropDeleteAfterwards', function(){
+            assert.ok(true, "_overridePropDeleteAfterwards should be invoked!")
+        });
+        var _unexpectedPropertyUser = {
+                getUnexpectedValue: function(){
+                    return this.getValue()
+                }
+            },
+            fn = claz._overridePropOnCall(
+                _unexpectedPropertyUser.getUnexpectedValue, 'getValue',
+                function() { return "unexpected value!" }
+            );
+        fn.call(_unexpectedPropertyUser);
+        claz._overridePropDeleteAfterwards.restore();
+    });
+    test('claz._overridePropOnCall should route to _overridePropPutBackAfterwards if the override property key is defined for the context object', function(assert) {
+        assert.expect( 1 );
+        sinon.stub(claz, '_overridePropPutBackAfterwards', function(){
+            assert.ok(true, "_overridePropPutBackAfterwards should be invoked!")
+        });
+        var _unexpectedPropertyUser = {
+                getValue: function() {
+                    return "expected value"
+                },
+                getUnexpectedValue: function(){
+                    return this.getValue()
+                }
+            },
+            fn = claz._overridePropOnCall(
+                _unexpectedPropertyUser.getUnexpectedValue, 'getValue',
+                function() { return "unexpected value!" }
+            );
+        fn.call(_unexpectedPropertyUser);
+        claz._overridePropPutBackAfterwards.restore();
+    });
     test('claz._composeToSingleFunction should return a function', function(assert) {
         var _getOne = function(){ return 1 },
             _plusOne = function() { return this.super() + 1 },

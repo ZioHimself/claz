@@ -125,7 +125,7 @@
             throw new TypeError("#wiz: baseClas=`"+ baseClas +"` baseClas."+ _memberzPropName +"=`"+ baseClas[_memberzPropName] +"` is not the members object!")
         }
         //noinspection UnnecessaryLocalVariableJS
-        var _clases = _slice.call(arguments).reverse(),
+        var _clases = _.toArray(arguments),
             _methods4Mix = _.chain(_clases)
                 .reduce(
                     _wizMixinMethodsForClaz,
@@ -218,18 +218,22 @@
                     if (!_.isFunction(fn)) {
                         throw new TypeError("#_composeToSingleFunction: fn=`"+ fn +"` is not a function!")
                     }
-                    var _fn = _overridePropOnCall(fn, 'super', memo.prevFn);
-                    memo.fns.push(fn);
+                    var _fn;
+                    if (!_.has(memo, 'prevFn')) {
+                        _fn = exports._overridePropOnCall(fn, 'super')
+                    } else {
+                        _fn = exports._overridePropOnCall(fn, 'super', memo.prevFn)
+                    }
+                    memo.fns.push(_fn);
                     memo.prevFn = _fn;
                     return memo
                 },
                 {
-                    prevFn: _.noop,
                     fns:[]
                 }
             ).fns;
         //noinspection UnnecessaryLocalVariableJS
-        var result = _.first(_fns);
+        var result = _.last(_fns);
         return result
     }
     function _overridePropOnCall(fn, propName, overrideProp) {
@@ -239,44 +243,88 @@
         if (!_.isString(propName)) {
             throw new TypeError("#_overridePropOnCall: propName=`"+ propName +"` is not a string!")
         }
+        /**
+         * if {@code overrideProp} is not passed, then it means, that
+         * property by {@code propName} should be overridden via delete
+         * (when the invocation happens, `_.has(this, propName) === false`)
+         * */
+        var _overrideViaDelete = arguments.length === 2;
         return function(){
             var _args = _.toArray(arguments),
                 _self = this,
                 _continueInvocation = function(context){
                     return fn.apply(context, _args)
                 };
-            if (!_.has(_self, propName)) {
-                return _overridePropDeleteAfterwards(_self, propName, overrideProp, _continueInvocation)
+            if (_.has(_self, propName)) {
+                return exports._overridePropPutBackAfterwards(_self, propName, overrideProp, _overrideViaDelete, _continueInvocation)
             }
-            return _overridePropPutBackAfterwards(_self, propName, overrideProp, _continueInvocation);
+            if (_overrideViaDelete) {
+                // no need to delete the property key, if it is to be overridden with a delete
+                return _continueInvocation(_self)
+            }
+            return exports._overridePropDeleteAfterwards(_self, propName, overrideProp, _continueInvocation)
         }
     }
     function _overridePropDeleteAfterwards(obj, propName, overrideProp, continueInvocation) {
-        return _overridePropWithCleanUpCallback(obj, propName, overrideProp, continueInvocation, function (obj) {
+        return _doOverrideAndRevertIfNeeded(obj, propName, overrideProp, false, continueInvocation, function (obj) {
             delete obj[propName];
             return obj
         });
     }
-    function _overridePropPutBackAfterwards(_self, propName, overrideProp, _continueInvocation) {
+    function _overridePropPutBackAfterwards(_self, propName, overrideProp, overrideViaDelete, _continueInvocation) {
         var _prop = _self[propName];
-        return _overridePropWithCleanUpCallback(_self, propName, overrideProp, _continueInvocation, function (obj) {
+        return _doOverrideAndRevertIfNeeded(_self, propName, overrideProp, overrideViaDelete, _continueInvocation, function (obj) {
             obj[propName] = _prop;
             return obj
         })
     }
-    function _overridePropWithCleanUpCallback(obj, propName, overrideProp, continueInvocation, cleanUpCallback) {
-        obj[propName] = overrideProp;
-        var _wasNaN = _.isNaN(overrideProp),
-            _wasSame = overrideProp === obj[propName],
-            result = continueInvocation(obj),
-            _isNaN = _.isNaN(obj),
-            _isSame = overrideProp === obj[propName];
-        if (_wasNaN !== _isNaN ||
-            _wasSame !== _isSame) {
+    function _doOverrideAndRevertIfNeeded(obj, propName, overrideProp, overrideViaDelete, continueInvocation, revertOverride) {
+        if (overrideViaDelete) {
+            return _doOverrideThenCheckAndRevertIfNeeded(obj, propName, overrideProp, continueInvocation,
+                function(){
+                    delete obj[propName];
+                    return obj
+                },
+                _.has,
+                function(overrideStateBefore, overrideStateAfter) {
+                    return overrideStateBefore !== overrideStateAfter
+                },
+                revertOverride
+            )
+        }
+        return _doOverrideThenCheckAndRevertIfNeeded(obj, propName, overrideProp, continueInvocation,
+            function(){
+                obj[propName] = overrideProp;
+                return obj
+            },
+            function(obj, propName, overrideProp){
+                var _objProp = obj[propName],
+                    _isNaN = _.isNaN(_objProp),
+                    _isSame = overrideProp === _objProp;
+                return {
+                    isNaN: _isNaN,
+                    isSame: _isSame
+                }
+            },
+            function(overrideStateBefore, overrideStateAfter) {
+                return overrideStateBefore.isNaN !== overrideStateAfter.isNaN ||
+                        overrideStateBefore.isSame !== overrideStateAfter.isSame
+            },
+            revertOverride
+        )
+    }
+    function _doOverrideThenCheckAndRevertIfNeeded(obj, propName, overrideProp, continueInvocation, doOverride, getOverrideState, isOverrideStateChanged, revertOverride){
+        doOverride(obj, propName, overrideProp);
+        var _overrideStateBefore = getOverrideState(obj, propName, overrideProp);
+
+        var result = continueInvocation(obj);
+
+        var _overrideStateAfter = getOverrideState(obj, propName, overrideProp);
+        if (isOverrideStateChanged(_overrideStateBefore, _overrideStateAfter)) {
             // means, that the property has been overridden within the continueInvocation => no cleanup needed
             return result;
         }
-        cleanUpCallback(obj);
+        revertOverride(obj);
         return result
     }
     function _wizMixinMembersForClaz(members, clas) {
@@ -312,26 +360,29 @@
         _ArrProto = Array.prototype,
         _slice = _ArrProto.slice,
         _memberzPropName = "memberz",
-        _wizPropName = "wiz";
+        _wizPropName = "wiz",
 
-    return {
-        claz: claz,
-        wiz: wiz,
+        exports = {
+            claz: claz,
+            wiz: wiz,
 
-        /** exposing internals for testing purpose */
-        _isPlainObject: _isPlainObject,
-        _getPublicMembers: _getPublicMethods,
-        _getInitFnOrNull: _getInitFnOrNull,
-        _getInitFnFromMembersOrNull: _getInitFnFromMembersOrNull,
-        _wizMixinMethodsForClaz: _wizMixinMethodsForClaz,
-        _wizMixinMethod: _wizMixinMethod,
-        _wizComposeMethods: _wizComposeMethods,
-        _wizComposeMultiMethods: _wizComposeMultiMethods,
-        _wizMixinMembersForClaz: _wizMixinMembersForClaz,
-        _wizMixinMember: _wizMixinMember,
-        _overridePropOnCall: _overridePropOnCall,
-        _overridePropDeleteAfterwards: _overridePropDeleteAfterwards,
-        _overridePropPutBackAfterwards: _overridePropPutBackAfterwards,
-        _overridePropWithCleanUpCallback: _overridePropWithCleanUpCallback
-    }
+            /** exposing internals for testing purpose */
+            _isPlainObject: _isPlainObject,
+            _getPublicMembers: _getPublicMethods,
+            _getInitFnOrNull: _getInitFnOrNull,
+            _getInitFnFromMembersOrNull: _getInitFnFromMembersOrNull,
+            _wizMixinMethodsForClaz: _wizMixinMethodsForClaz,
+            _wizMixinMethod: _wizMixinMethod,
+            _wizComposeMethods: _wizComposeMethods,
+            _wizComposeMultiMethods: _wizComposeMultiMethods,
+            _composeToSingleFunction: _composeToSingleFunction,
+            _overridePropOnCall: _overridePropOnCall,
+            _overridePropDeleteAfterwards: _overridePropDeleteAfterwards,
+            _overridePropPutBackAfterwards: _overridePropPutBackAfterwards,
+            _doOverrideAndRevertIfNeeded: _doOverrideAndRevertIfNeeded,
+            _doOverrideThenCheckAndRevertIfNeeded: _doOverrideThenCheckAndRevertIfNeeded,
+            _wizMixinMembersForClaz: _wizMixinMembersForClaz,
+            _wizMixinMember: _wizMixinMember
+        };
+    return exports
 });

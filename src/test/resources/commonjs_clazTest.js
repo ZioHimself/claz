@@ -250,4 +250,143 @@
         assert.deepEqual(_keysAfterInvocation, _keysBeforeInvocation, "_overridePropDeleteAfterwards should not change keys of an object");
         assert.deepEqual(_valuesAfterInvocation, _valuesBeforeInvocation, "_overridePropDeleteAfterwards should not change values of an object");
     });
+    test('claz._overridePropPutBackAfterwards should call the passed invocation function with overridden property, put the initial property afterwards, and return the results of the invocation', function(assert) {
+        assert.expect( 7 );
+        var _unexpectedPropertyUser = {
+                getValue: function() {
+                    return "expected value"
+                },
+                getUnexpectedValue: function(){
+                    return this.getValue()
+                }
+            },
+            _initialPropFn = _unexpectedPropertyUser.getValue,
+            _keysBeforeInvocation = _.keys(_unexpectedPropertyUser),
+            _valuesBeforeInvocation = _.values(_unexpectedPropertyUser),
+            _overridePropFn = function(){ return "unexpected value!" },
+            actualValue = claz._overridePropPutBackAfterwards(
+                _unexpectedPropertyUser, 'getValue',
+                _overridePropFn,
+                false,
+                function(obj){
+                    assert.strictEqual(obj['getValue'], _overridePropFn, "the object, passed in during the invocation, should have the property getValue overridden by the _overridePropFn");
+                    assert.strictEqual(obj['getValue'], _overridePropFn, "The object, passed in during invocation, should have the override property the same, as passed to _overridePropDeleteAfterwards");
+                    var invocationResult = _unexpectedPropertyUser.getUnexpectedValue.apply(obj, []);
+                    assert.strictEqual(invocationResult, "unexpected value!", "The invocation should return `unexpected value!` string");
+                    return invocationResult
+                }
+            ),
+            _keysAfterInvocation = _.keys(_unexpectedPropertyUser),
+            _valuesAfterInvocation = _.values(_unexpectedPropertyUser);
+        assert.strictEqual(actualValue, "unexpected value!", "_overridePropDeleteAfterwards should return `unexpected value!` string");
+        assert.strictEqual(_unexpectedPropertyUser.getValue, _initialPropFn, "after the invocation, _unexpectedPropertyUser should have the overridden property the same as it was");
+        assert.deepEqual(_keysAfterInvocation, _keysBeforeInvocation, "_overridePropDeleteAfterwards should not change keys of an object");
+        assert.deepEqual(_valuesAfterInvocation, _valuesBeforeInvocation, "_overridePropDeleteAfterwards should not change values of an object");
+    });
+    test('claz._overridePropOnCall should return a function', function(assert) {
+        var _unexpectedPropertyUser = {
+                getValue: function() {
+                    return "expected value"
+                },
+                getUnexpectedValue: function(){
+                    return this.getValue()
+                }
+            },
+            fn = claz._overridePropOnCall(
+                _unexpectedPropertyUser.getUnexpectedValue, 'getValue',
+                function() { return "unexpected value!" }
+            );
+        assert.ok(_.isFunction(fn), "fn should be a function!")
+    });
+    /** uncomment as soon, as make friends with {@link sinon#stub} */
+    //test('claz._overridePropOnCall should route to _overridePropDeleteAfterwards if the override property key is not defined for the context object', function(assert) {
+    //    assert.expect( 1 );
+    //    sinon.stub(claz, '_overridePropDeleteAfterwards', function(){
+    //        assert.ok(true, "_overridePropDeleteAfterwards should be invoked!")
+    //    });
+    //    var _unexpectedPropertyUser = {
+    //            getUnexpectedValue: function(){
+    //                return this.getValue()
+    //            }
+    //        },
+    //        fn = claz._overridePropOnCall(
+    //            _unexpectedPropertyUser.getUnexpectedValue, 'getValue',
+    //            function() { return "unexpected value!" }
+    //        );
+    //    fn.call(_unexpectedPropertyUser);
+    //    claz.restore();
+    //});
+    //test('claz._overridePropOnCall should route to _overridePropPutBackAfterwards if the override property key is defined for the context object', function(assert) {
+    //    assert.expect( 1 );
+    //    sinon.stub(claz, '_overridePropPutBackAfterwards', function(){
+    //        assert.ok(true, "_overridePropPutBackAfterwards should be invoked!")
+    //    });
+    //    var _unexpectedPropertyUser = {
+    //            getValue: function() {
+    //                return "expected value"
+    //            },
+    //            getUnexpectedValue: function(){
+    //                return this.getValue()
+    //            }
+    //        },
+    //        fn = claz._overridePropOnCall(
+    //            _unexpectedPropertyUser.getUnexpectedValue, 'getValue',
+    //            function() { return "unexpected value!" }
+    //        );
+    //    fn.call(_unexpectedPropertyUser);
+    //    claz.restore();
+    //});
+    test('claz._composeToSingleFunction should return a function', function(assert) {
+        var _getOne = function(){ return 1 },
+            _plusOne = function() { return this.super() + 1 },
+            _double = function() { return this.super() * 2 },
+            fn = claz._composeToSingleFunction(
+                [_double, _plusOne, _getOne]
+            );
+        assert.ok(_.isFunction(fn), "fn should be a function!")
+    });
+    test('claz._composeToSingleFunction should route to previous function on result functions .super() call', function(assert) {
+        assert.expect( 17 );
+        var _getX = function(){
+                assert.ok(_.isUndefined(this['super']), "this.super should not be defined for _getX, as it is the first composed function");
+                assert.strictEqual(this.x, 0, "this.x for _getX call should be `0`");
+                assert.ok(!_getXCalled, "_getX should be invoked only once due to fn() call");
+                assert.ok(_plusOneCalled, "_plusOne should be invoked before _getX is called");
+                assert.ok(_doubleCalled, "_double should be invoked before _getX is called");
+                _getXCalled = true;
+                return this.x
+            },
+            _plusOne = function() {
+                assert.ok(!_getXCalled, "_getX should be invoked only once due to fn() call");
+                assert.ok(!_plusOneCalled, "_plusOne should be invoked only after _double is called");
+                assert.ok(_doubleCalled, "_double should be already invoked when _plusOne is called");
+                _plusOneCalled = true;
+                var _superResult = this.super();
+                assert.strictEqual(_superResult, 0, "this.super() for _plusOne should return `0` (as _getX does)");
+                assert.ok(_getXCalled, "_getX should be already invoked after this.super() for _plusOne call");
+                return _superResult + 1
+            },
+            _double = function() {
+                assert.ok(!_getXCalled, "_getX should be invoked only once due to fn() call");
+                assert.ok(!_plusOneCalled, "_plusOne should be invoked only after _double is called");
+                assert.ok(!_doubleCalled, "_double should be invoked only once due to fn() call");
+                _doubleCalled = true;
+                var _superResult = this.super();
+                assert.strictEqual(_superResult, 1, "this.super() for _double should return `1` (as _plusOne(_getX()) does)");
+                assert.ok(_getXCalled, "_getX should be already invoked after this.super() for _double call");
+                assert.ok(_plusOneCalled, "_plusOne should be already invoked after this.super() for _double call");
+                return _superResult * 2
+            },
+            fn = claz._composeToSingleFunction(
+                [_getX, _plusOne, _double]
+            ),
+            _getXCalled = false,
+            _plusOneCalled = false,
+            _doubleCalled = false,
+
+            result = fn.call({
+                x:0
+            });
+        assert.strictEqual(result, 2, "fn call for an object with x=0 should result in `2`=`((0)+1)*2`=`this.double(this.plusOne(this.getX()))`")
+    });
 })();

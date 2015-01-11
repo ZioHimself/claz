@@ -220,4 +220,34 @@
         var _result2 = _Result(2);
         assert.strictEqual(_result2.bar(), 2, "this.bar() for _result2 should return `2`");
     });
+
+    module('claz.wiz');
+    test('claz._overridePropDeleteAfterwards should call the passed invocation function with overridden property, delete it afterwards, and return the results of the invocation', function(assert) {
+        assert.expect( 7 );
+        var _unexpectedPropertyUser = {
+                getUnexpectedValue: function(){
+                    return this.getValue()
+                }
+            },
+            _keysBeforeInvocation = _.keys(_unexpectedPropertyUser),
+            _valuesBeforeInvocation = _.values(_unexpectedPropertyUser),
+            _overridePropFn = function(){ return "unexpected value!" },
+            actualValue = claz._overridePropDeleteAfterwards(
+                _unexpectedPropertyUser, 'getValue',
+                _overridePropFn,
+                function(obj){
+                    assert.ok(_.has(obj, 'getValue'), "The object, passed in during invocation, should have a property by the override property name");
+                    assert.strictEqual(obj['getValue'], _overridePropFn, "The object, passed in during invocation, should have the override property the same, as passed to _overridePropDeleteAfterwards");
+                    var invocationResult = _unexpectedPropertyUser.getUnexpectedValue.apply(obj, []);
+                    assert.strictEqual(invocationResult, "unexpected value!", "The invocation should return `unexpected value!` string");
+                    return invocationResult
+                }
+            ),
+            _keysAfterInvocation = _.keys(_unexpectedPropertyUser),
+            _valuesAfterInvocation = _.values(_unexpectedPropertyUser);
+        assert.strictEqual(actualValue, "unexpected value!", "_overridePropDeleteAfterwards should return `unexpected value!` string");
+        assert.ok(!_.has(_unexpectedPropertyUser, 'getValue'), "_unexpectedPropertyUser should not have a property by the override property name, after the invocation");
+        assert.deepEqual(_keysAfterInvocation, _keysBeforeInvocation, "_overridePropDeleteAfterwards should not change keys of an object");
+        assert.deepEqual(_valuesAfterInvocation, _valuesBeforeInvocation, "_overridePropDeleteAfterwards should not change values of an object");
+    });
 })();

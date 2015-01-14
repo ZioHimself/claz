@@ -63,7 +63,11 @@
             var that = _.reduce(
                     _publicMethods,
                     function(publicThis, member, memberName){
-                        publicThis[memberName] = _.bind(member, self);
+                        publicThis[memberName] = function(){
+                            var _context = _.extend({}, self, that),
+                                _args = _.toArray(arguments);
+                            return member.apply(_context,_args);
+                        };
                         return publicThis
                     },
                     {}
@@ -127,6 +131,7 @@
         //noinspection UnnecessaryLocalVariableJS
         var _clases = _slice.call(arguments,1);
         _clases.push(baseClas);
+        //noinspection UnnecessaryLocalVariableJS
         var _methods4Mix = _.chain(_clases)
                 .reduce(
                     _wizMixinMethodsForClaz,
@@ -253,80 +258,40 @@
         return function(){
             var _args = _.toArray(arguments),
                 _self = this,
-                _continueInvocation = function(context){
+                _invokeWithContext = function(context){
                     return fn.apply(context, _args)
                 };
-            if (_.has(_self, propName)) {
-                return exports._overridePropPutBackAfterwards(_self, propName, overrideProp, _overrideViaDelete, _continueInvocation)
-            }
-            if (_overrideViaDelete) {
-                // no need to delete the property key, if it is to be overridden with a delete
-                return _continueInvocation(_self)
-            }
-            return exports._overridePropDeleteAfterwards(_self, propName, overrideProp, _continueInvocation)
+            return exports._overrideAccountingPropExistence(_self, propName, overrideProp, _overrideViaDelete, _invokeWithContext)
         }
     }
-    function _overridePropDeleteAfterwards(obj, propName, overrideProp, continueInvocation) {
-        return _doOverrideAndRevertIfNeeded(obj, propName, overrideProp, false, continueInvocation, function (obj) {
-            delete obj[propName];
-            return obj
-        });
-    }
-    function _overridePropPutBackAfterwards(_self, propName, overrideProp, overrideViaDelete, _continueInvocation) {
-        var _prop = _self[propName];
-        return _doOverrideAndRevertIfNeeded(_self, propName, overrideProp, overrideViaDelete, _continueInvocation, function (obj) {
-            obj[propName] = _prop;
-            return obj
-        })
-    }
-    function _doOverrideAndRevertIfNeeded(obj, propName, overrideProp, overrideViaDelete, continueInvocation, revertOverride) {
+    function _overrideAccountingPropExistence(obj, propName, overrideProp, overrideViaDelete, invokeWithContext){
+        if (_.has(obj, propName)) {
+            return exports._overrideWithContextSwitch(obj, propName, overrideProp, overrideViaDelete, invokeWithContext)
+        }
         if (overrideViaDelete) {
-            return _doOverrideThenCheckAndRevertIfNeeded(obj, propName, overrideProp, continueInvocation,
-                function(){
-                    delete obj[propName];
-                    return obj
-                },
-                _.has,
-                function(overrideStateBefore, overrideStateAfter) {
-                    return overrideStateBefore !== overrideStateAfter
-                },
-                revertOverride
-            )
+            // no need to delete the property key, if it is to be overridden with a delete
+            return invokeWithContext(obj)
         }
-        return _doOverrideThenCheckAndRevertIfNeeded(obj, propName, overrideProp, continueInvocation,
-            function(){
-                obj[propName] = overrideProp;
-                return obj
-            },
-            function(obj, propName, overrideProp){
-                var _objProp = obj[propName],
-                    _isNaN = _.isNaN(_objProp),
-                    _isSame = overrideProp === _objProp;
-                return {
-                    isNaN: _isNaN,
-                    isSame: _isSame
-                }
-            },
-            function(overrideStateBefore, overrideStateAfter) {
-                return overrideStateBefore.isNaN !== overrideStateAfter.isNaN ||
-                        overrideStateBefore.isSame !== overrideStateAfter.isSame
-            },
-            revertOverride
-        )
+        return exports._overrideWithContextSwitch(obj, propName, overrideProp, overrideViaDelete, invokeWithContext)
     }
-    function _doOverrideThenCheckAndRevertIfNeeded(obj, propName, overrideProp, continueInvocation, doOverride, getOverrideState, isOverrideStateChanged, revertOverride){
-        doOverride(obj, propName, overrideProp);
-        var _overrideStateBefore = getOverrideState(obj, propName, overrideProp);
-
-        var result = continueInvocation(obj);
-
-        var _overrideStateAfter = getOverrideState(obj, propName, overrideProp);
-        if (isOverrideStateChanged(_overrideStateBefore, _overrideStateAfter)) {
-            // means, that the property has been overridden within the continueInvocation => no cleanup needed
-            return result;
+    function _overrideWithContextSwitch(obj, propName, overrideProp, overrideViaDelete, invokeWithContext){
+        var _context = _.extend({}, obj);
+        _context = exports._overrideProp(_context, propName, overrideViaDelete, overrideProp);
+        return invokeWithContext(_context);
+    }
+    function _overrideProp(obj, propName, overrideViaDelete, overrideProp){
+        if (overrideViaDelete) {
+            return exports._overridePropViaDelete(obj, propName)
         }
-        revertOverride(obj);
-        return result
+        return exports._overridePropViaPut(obj, propName, overrideProp)
+    }
+    function _overridePropViaPut(obj, propName, overrideProp) {
+        obj[propName] = overrideProp;
+        return obj
+    }
+    function _overridePropViaDelete(obj, propName) {
+        delete obj[propName];
+        return obj
     }
     function _wizMixinMembersForClaz(members, clas) {
         if (!_.isFunction(clas)) {
@@ -378,10 +343,11 @@
             _wizComposeMultiMethods: _wizComposeMultiMethods,
             _composeToSingleFunction: _composeToSingleFunction,
             _overridePropOnCall: _overridePropOnCall,
-            _overridePropDeleteAfterwards: _overridePropDeleteAfterwards,
-            _overridePropPutBackAfterwards: _overridePropPutBackAfterwards,
-            _doOverrideAndRevertIfNeeded: _doOverrideAndRevertIfNeeded,
-            _doOverrideThenCheckAndRevertIfNeeded: _doOverrideThenCheckAndRevertIfNeeded,
+            _overrideAccountingPropExistence: _overrideAccountingPropExistence,
+            _overrideWithContextSwitch: _overrideWithContextSwitch,
+            _overrideProp: _overrideProp,
+            _overridePropViaPut: _overridePropViaPut,
+            _overridePropViaDelete: _overridePropViaDelete,
             _wizMixinMembersForClaz: _wizMixinMembersForClaz,
             _wizMixinMember: _wizMixinMember
         };

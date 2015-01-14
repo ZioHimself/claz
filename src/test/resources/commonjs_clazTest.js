@@ -222,67 +222,6 @@
     });
 
     module('claz.wiz');
-    test('claz._overridePropDeleteAfterwards should call the passed invocation function with overridden property, delete it afterwards, and return the results of the invocation', function(assert) {
-        assert.expect( 7 );
-        var _unexpectedPropertyUser = {
-                getUnexpectedValue: function(){
-                    return this.getValue()
-                }
-            },
-            _keysBeforeInvocation = _.keys(_unexpectedPropertyUser),
-            _valuesBeforeInvocation = _.values(_unexpectedPropertyUser),
-            _overridePropFn = function(){ return "unexpected value!" },
-            actualValue = claz._overridePropDeleteAfterwards(
-                _unexpectedPropertyUser, 'getValue',
-                _overridePropFn,
-                function(obj){
-                    assert.ok(_.has(obj, 'getValue'), "The object, passed in during invocation, should have a property by the override property name");
-                    assert.strictEqual(obj['getValue'], _overridePropFn, "The object, passed in during invocation, should have the override property the same, as passed to _overridePropDeleteAfterwards");
-                    var invocationResult = _unexpectedPropertyUser.getUnexpectedValue.apply(obj, []);
-                    assert.strictEqual(invocationResult, "unexpected value!", "The invocation should return `unexpected value!` string");
-                    return invocationResult
-                }
-            ),
-            _keysAfterInvocation = _.keys(_unexpectedPropertyUser),
-            _valuesAfterInvocation = _.values(_unexpectedPropertyUser);
-        assert.strictEqual(actualValue, "unexpected value!", "_overridePropDeleteAfterwards should return `unexpected value!` string");
-        assert.ok(!_.has(_unexpectedPropertyUser, 'getValue'), "_unexpectedPropertyUser should not have a property by the override property name, after the invocation");
-        assert.deepEqual(_keysAfterInvocation, _keysBeforeInvocation, "_overridePropDeleteAfterwards should not change keys of an object");
-        assert.deepEqual(_valuesAfterInvocation, _valuesBeforeInvocation, "_overridePropDeleteAfterwards should not change values of an object");
-    });
-    test('claz._overridePropPutBackAfterwards should call the passed invocation function with overridden property, put the initial property afterwards, and return the results of the invocation', function(assert) {
-        assert.expect( 7 );
-        var _unexpectedPropertyUser = {
-                getValue: function() {
-                    return "expected value"
-                },
-                getUnexpectedValue: function(){
-                    return this.getValue()
-                }
-            },
-            _initialPropFn = _unexpectedPropertyUser.getValue,
-            _keysBeforeInvocation = _.keys(_unexpectedPropertyUser),
-            _valuesBeforeInvocation = _.values(_unexpectedPropertyUser),
-            _overridePropFn = function(){ return "unexpected value!" },
-            actualValue = claz._overridePropPutBackAfterwards(
-                _unexpectedPropertyUser, 'getValue',
-                _overridePropFn,
-                false,
-                function(obj){
-                    assert.strictEqual(obj['getValue'], _overridePropFn, "the object, passed in during the invocation, should have the property getValue overridden by the _overridePropFn");
-                    assert.strictEqual(obj['getValue'], _overridePropFn, "The object, passed in during invocation, should have the override property the same, as passed to _overridePropDeleteAfterwards");
-                    var invocationResult = _unexpectedPropertyUser.getUnexpectedValue.apply(obj, []);
-                    assert.strictEqual(invocationResult, "unexpected value!", "The invocation should return `unexpected value!` string");
-                    return invocationResult
-                }
-            ),
-            _keysAfterInvocation = _.keys(_unexpectedPropertyUser),
-            _valuesAfterInvocation = _.values(_unexpectedPropertyUser);
-        assert.strictEqual(actualValue, "unexpected value!", "_overridePropDeleteAfterwards should return `unexpected value!` string");
-        assert.strictEqual(_unexpectedPropertyUser.getValue, _initialPropFn, "after the invocation, _unexpectedPropertyUser should have the overridden property the same as it was");
-        assert.deepEqual(_keysAfterInvocation, _keysBeforeInvocation, "_overridePropDeleteAfterwards should not change keys of an object");
-        assert.deepEqual(_valuesAfterInvocation, _valuesBeforeInvocation, "_overridePropDeleteAfterwards should not change values of an object");
-    });
     test('claz._overridePropOnCall should return a function', function(assert) {
         var _unexpectedPropertyUser = {
                 getValue: function() {
@@ -298,42 +237,87 @@
             );
         assert.ok(_.isFunction(fn), "fn should be a function!")
     });
-    test('claz._overridePropOnCall should route to _overridePropDeleteAfterwards if the override property key is not defined for the context object', function(assert) {
-        assert.expect( 1 );
-        sinon.stub(claz, '_overridePropDeleteAfterwards', function(){
-            assert.ok(true, "_overridePropDeleteAfterwards should be invoked!")
-        });
+    test('claz._overridePropOnCall should call the passed invocation function with overridden property and return the results of the invocation', function(assert) {
+        assert.expect( 7 );
         var _unexpectedPropertyUser = {
                 getUnexpectedValue: function(){
-                    return this.getValue()
+                    assert.ok(_.has(this, 'getValue'), "The object, passed in during invocation, should have a property by the override property name");
+                    assert.strictEqual(this['getValue'], _overridePropFn, "The object, passed in during invocation, should have the override property the same, as passed to _overridePropDeleteAfterwards");
+                    var result = this.getValue();
+                    assert.strictEqual(result, "unexpected value!", "The invocation should return `unexpected value!` string");
+                    return result
                 }
             },
-            fn = claz._overridePropOnCall(
-                _unexpectedPropertyUser.getUnexpectedValue, 'getValue',
-                function() { return "unexpected value!" }
-            );
-        fn.call(_unexpectedPropertyUser);
-        claz._overridePropDeleteAfterwards.restore();
+            _keysBeforeInvocation = _.keys(_unexpectedPropertyUser),
+            _valuesBeforeInvocation = _.values(_unexpectedPropertyUser),
+            _overridePropFn = function(){ return "unexpected value!" },
+            actualValue = claz._overridePropOnCall(
+                _unexpectedPropertyUser, 'getValue',
+                _overridePropFn
+            ),
+            _keysAfterInvocation = _.keys(_unexpectedPropertyUser),
+            _valuesAfterInvocation = _.values(_unexpectedPropertyUser);
+        assert.strictEqual(actualValue, "unexpected value!", "_overridePropDeleteAfterwards should return `unexpected value!` string");
+        assert.ok(!_.has(_unexpectedPropertyUser, 'getValue'), "_unexpectedPropertyUser should not have a property by the override property name, after the invocation");
+        assert.deepEqual(_keysAfterInvocation, _keysBeforeInvocation, "_overridePropDeleteAfterwards should not change keys of an object");
+        assert.deepEqual(_valuesAfterInvocation, _valuesBeforeInvocation, "_overridePropDeleteAfterwards should not change values of an object");
     });
-    test('claz._overridePropOnCall should route to _overridePropPutBackAfterwards if the override property key is defined for the context object', function(assert) {
-        assert.expect( 1 );
-        sinon.stub(claz, '_overridePropPutBackAfterwards', function(){
-            assert.ok(true, "_overridePropPutBackAfterwards should be invoked!")
-        });
+    test('claz._overridePropOnCall should call the passed invocation function with overridden property and return the results of the invocation, the object for the call should have the property the same', function(assert) {
+        assert.expect( 7 );
         var _unexpectedPropertyUser = {
                 getValue: function() {
                     return "expected value"
                 },
                 getUnexpectedValue: function(){
-                    return this.getValue()
+                    assert.strictEqual(this['getValue'], _overridePropFn, "the object, passed in during the invocation, should have the property getValue overridden by the _overridePropFn");
+                    assert.strictEqual(this['getValue'], _overridePropFn, "The object, passed in during invocation, should have the override property the same, as passed to _overridePropDeleteAfterwards");
+                    var result = this.getValue();
+                    assert.strictEqual(result, "unexpected value!", "The invocation should return `unexpected value!` string");
+                    return result
                 }
             },
-            fn = claz._overridePropOnCall(
-                _unexpectedPropertyUser.getUnexpectedValue, 'getValue',
-                function() { return "unexpected value!" }
-            );
-        fn.call(_unexpectedPropertyUser);
-        claz._overridePropPutBackAfterwards.restore();
+            _initialPropFn = _unexpectedPropertyUser.getValue,
+            _keysBeforeInvocation = _.keys(_unexpectedPropertyUser),
+            _valuesBeforeInvocation = _.values(_unexpectedPropertyUser),
+            _overridePropFn = function(){ return "unexpected value!" },
+            actualValue = claz._overridePropOnCall(
+                _unexpectedPropertyUser, 'getValue',
+                _overridePropFn
+            ),
+            _keysAfterInvocation = _.keys(_unexpectedPropertyUser),
+            _valuesAfterInvocation = _.values(_unexpectedPropertyUser);
+        assert.strictEqual(actualValue, "unexpected value!", "_overridePropDeleteAfterwards should return `unexpected value!` string");
+        assert.strictEqual(_unexpectedPropertyUser.getValue, _initialPropFn, "after the invocation, _unexpectedPropertyUser should have the overridden property the same as it was");
+        assert.deepEqual(_keysAfterInvocation, _keysBeforeInvocation, "_overridePropDeleteAfterwards should not change keys of an object");
+        assert.deepEqual(_valuesAfterInvocation, _valuesBeforeInvocation, "_overridePropDeleteAfterwards should not change values of an object");
+    });
+    test('claz._overrideProp should route to claz._overridePropViaDelete if called with overrideViaDelete === true', function(assert) {
+        assert.expect( 1 );
+        sinon.stub(claz, '_overridePropViaDelete', function(){
+            assert.ok(true, "_overridePropViaDelete should be invoked!")
+        });
+
+        var _that = {
+            getValue: function() {
+                return "expected value"
+            }
+        };
+        claz._overrideProp(_that, 'getValue', true);
+
+        claz._overridePropViaDelete.reset()
+    });
+    test('claz._overrideProp should route to claz._overridePropViaPut if called with overrideViaDelete === false', function(assert) {
+        assert.expect( 1 );
+        sinon.stub(claz, '_overridePropViaPut', function(){
+            assert.ok(true, "_overridePropViaPut should be invoked!")
+        });
+
+        var _that = {
+            getValue: function() {}
+        };
+        claz._overrideProp(_that, 'getValue', false, function(){});
+
+        claz._overridePropViaPut.reset()
     });
     test('claz._composeToSingleFunction should return a function', function(assert) {
         var _getOne = function(){ return 1 },

@@ -320,7 +320,7 @@
         };
         claz._overrideProp(_that, 'getValue', true);
 
-        claz._overridePropViaDelete.reset()
+        claz._overridePropViaDelete.restore()
     });
     test('claz._overrideProp should route to claz._overridePropViaPut if called with overrideViaDelete === false', function(assert) {
         assert.expect( 1 );
@@ -333,7 +333,7 @@
         };
         claz._overrideProp(_that, 'getValue', false, function(){});
 
-        claz._overridePropViaPut.reset()
+        claz._overridePropViaPut.restore()
     });
     test('claz._composeToSingleFunction should return a function', function(assert) {
         var _getOne = function(){ return 1 },

@@ -58,35 +58,45 @@ var albert = Person("Albert", 30);
 
 ```javascript
 
-var IntSupplier = claz.claz(
-    function(int){
-        this._int = int
+var ValueGetter = claz.claz(
+        function(v){
+            this.v = v
+        },
+        {
+            v: 0,
+            getValue: function(){
+                return this.v
+            }
+        }
+    ),
+    Incrementing = {
+        getValue: function(){
+            return this.super() + 1
+        }
     },
-    {
-        getInt: function() {
-            return this._int
+    Doubling = claz.claz({
+        getValue: function(){
+            return this.super() * 2
         }
-    }
-);
-var GteZero = claz.claz({
-    getInt: function(){
-        var _int = this.super();
-        if (_int <= 0) {
-            return 0
-        }
-        return _int
-    }
-});
-var Doubling = claz.claz({
-    getInt: function(){
-        return this.super() * 2
-    }
-});
-var DoublingGteZeroIntSupplier = claz.wiz(claz.claz(function(int){ this._int = int }{}), IntSupplier, GteZero, Doubling);
+    }),
+    IncrementingDoublingValueGetter = claz.wiz(
+        {
+            init: function(v){
+                switch (arguments.length) {
+                    case 0:
+                        return;
+                    case 1:
+                        this.v = v;
+                        return;
+                }
+            },
+        },
+        ValueGetter, Incrementing, Doubling
+    ),
+    vGetter1 = IncrementingDoublingValueGetter();
 
-var int1 = DoublingGteZeroIntSupplier(1);
-int1.getInt(); // 2 = (1) * 2 = ((1 <= 0)? 1 : 0) * 2
+vGetter1.getValue(); // 2 = (1) * 2 = ((0) + 1) * 2
 
-var int2 = DoublingGteZeroIntSupplier(-1);
-int2.getInt(); // 0 = ((-1 <= 0)? -1 : 0) * 2
+var vGetter2 = IncrementingDoublingValueGetter(2);
+vGetter2.getValue(); // 6 = (3) * 2 = ((2) + 1) * 2
 ```

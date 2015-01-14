@@ -54,6 +54,51 @@ var albert = Person("Albert", 30);
 // albert.getAlias() === "that guy"
 ```
 
+#### claz.WizClazBuilder:
+
+```javascript
+
+var ValueGetter = claz.claz(
+        function(v){
+            this.v = v
+        },
+        {
+            v: 0,
+            getValue: function(){
+                return this.v
+            }
+        }
+    ),
+    Incrementing = {
+        getValue: function(){
+            return this.super() + 1
+        }
+    },
+    Doubling = claz.claz({
+        getValue: function(){
+            return this.super() * 2
+        }
+    }),
+    Top = {
+        init: function(v){
+            switch (arguments.length) {
+                case 0:
+                    return;
+                case 1:
+                    this.v = v;
+                    return;
+            }
+        },
+    },
+    IncrementingDoublingValueGetter = claz.WizClazBuilder(Top).wiz(ValueGetter).wiz(Incrementing).wiz(Doubling).build(),
+    vGetter1 = IncrementingDoublingValueGetter();
+
+vGetter1.getValue(); // 2 = (1) * 2 = ((0) + 1) * 2
+
+var vGetter2 = IncrementingDoublingValueGetter(2);
+vGetter2.getValue(); // 6 = (3) * 2 = ((2) + 1) * 2
+```
+
 #### claz.wiz:
 
 ```javascript

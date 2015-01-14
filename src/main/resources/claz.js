@@ -131,6 +131,9 @@
      * @param {...function|...object} clasOrMembers - class(es) or members (multiple) to be mixed in
      * */
     function wiz(topClasOrMembers, clasOrMembers){
+        if (arguments.length === 1) {
+            return exports._getClasFromClasOrMembers(topClasOrMembers)
+        }
         var _clases = _slice.call(arguments,1);
         _clases.push(topClasOrMembers);
         //noinspection UnnecessaryLocalVariableJS
@@ -141,6 +144,12 @@
             resultClas = exports._putMembersToClas(topClasOrMembers, _memberz);
         resultClas[_wizPropName] = _mixinz;
         return resultClas
+    }
+    function _getClasFromClasOrMembers(clasOrMembers){
+        if(_.isFunction(clasOrMembers)){
+            return clasOrMembers
+        }
+        return exports.claz(clasOrMembers)
     }
     function _getWizMethods4Mix(clases) {
         return _.chain(clases)
@@ -342,18 +351,41 @@
         _toString = _ObjProto.toString,
         _ArrProto = Array.prototype,
         _slice = _ArrProto.slice,
+        _push = _ArrProto.push,
         _memberzPropName = "memberz",
         _wizPropName = "wiz",
+
+        WizClazBuilder = claz.claz(
+            function(clazOrMembers){
+                this.clazOrMembers = clazOrMembers;
+                this.wizMixins = [];
+            },
+            {
+                wiz: function(clazOrMembers){
+                    var _clasesOrMembers = _.toArray(arguments);
+                    _push.apply(this.wizMixins, _clasesOrMembers);
+                    return this
+                },
+                build: function(){
+                    var _args = [];
+                    _args.push(this.clazOrMembers);
+                    _push.apply(_args, this.wizMixins);
+                    return exports.wiz.apply(_args)
+                }
+            }
+        ),
 
         exports = {
             claz: claz,
             wiz: wiz,
+            WizClazBuilder: WizClazBuilder,
 
             /** exposing internals for testing purpose */
             _isPlainObject: _isPlainObject,
             _getPublicMembers: _getPublicMembers,
             _getInitFnOrNull: _getInitFnOrNull,
             _getInitFnFromMembersOrNull: _getInitFnFromMembersOrNull,
+            _getClasFromClasOrMembers: _getClasFromClasOrMembers,
             _getWizMethods4Mix: _getWizMethods4Mix,
             _wizMixinMethodsForClaz: _wizMixinMethodsForClaz,
             _getMembersFromClazOrMembers: _getMembersFromClazOrMembers,

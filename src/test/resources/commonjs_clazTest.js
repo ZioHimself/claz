@@ -388,4 +388,63 @@
             });
         assert.strictEqual(result, 2, "fn call for an object with x=0 should result in `2`=`((0)+1)*2`=`this.double(this.plusOne(this.getX()))`")
     });
+    test('claz.wiz should route to previous function on result functions .super() call', function(assert) {
+        assert.expect( 16 );
+        var ValueGetter = claz.claz(
+                function(v){
+                    switch (arguments.length) {
+                        case 0:
+                            return;
+                        case 1:
+                            this.v = v;
+                            return;
+                    }
+                },
+                {
+                    v: 0,
+                    getValue: function(){
+                        assert.ok(_.isUndefined(this['super']), "this.super should not be defined for ValueGetter.getValue(), as it is the first composed function");
+                        assert.ok(!_valueGetterCalled, "getValue for ValueGetter should be invoked only once per getValue call");
+                        assert.ok(_incrementingCalled, "getValue for Incrementing should already be invoked on ValueGetter.getValue() call");
+                        assert.ok(_doublingCalled, "getValue for Doubling should already be invoked on ValueGetter.getValue() call");
+                        _valueGetterCalled = true;
+                        return this.v
+                    }
+                }
+            ),
+            Incrementing = {
+                getValue: function(){
+                    assert.ok(!_valueGetterCalled, "getValue for ValueGetter should be invoked only after getValue for Incrementing is called");
+                    assert.ok(!_incrementingCalled, "getValue for Incrementing should be invoked only after getValue for Incrementing is called");
+                    assert.ok(_doublingCalled, "getValue for Doubling should already be invoked on Incrementing.getValue() call");
+                    _incrementingCalled =  true;
+                    var superResult = this.super();
+                    assert.strictEqual(superResult, 0, "this.super() for Incrementing should return `0` (as `ValueGetter.getValue()` does)");
+                    assert.ok(_valueGetterCalled, "getValue for ValueGetter should be already invoked after this.super() for Incrementing.getValue call");
+                    return superResult + 1
+                }
+            },
+            Doubling = claz.claz({
+                getValue: function(){
+                    assert.ok(!_valueGetterCalled, "getValue for ValueGetter should be invoked only after getValue for Incrementing is called");
+                    assert.ok(!_incrementingCalled, "getValue for Incrementing should be invoked only after getValue for Doubling is called");
+                    assert.ok(!_doublingCalled, "getValue for Doubling should be invoked once due to getValue() call");
+                    _doublingCalled =  true;
+                    var superResult = this.super();
+                    assert.strictEqual(superResult, 1, "this.super() for Doubling should return `1` (as `Incrementing.getValue(ValueGetter.getValue())` does)");
+                    assert.ok(_valueGetterCalled, "getValue for ValueGetter should be already invoked after this.super() for Doubling.getValue call");
+                    assert.ok(_incrementingCalled, "getValue for Incrementing should be already invoked after this.super() for Doubling.getValue call");
+                    return superResult * 2
+                }
+            }),
+            IncrementingDoublingValueGetter = claz.wiz({}, ValueGetter, Incrementing, Doubling),
+            vGetter1 = IncrementingDoublingValueGetter(),
+
+            _valueGetterCalled = false,
+            _incrementingCalled = false,
+            _doublingCalled = false,
+            value1 = vGetter1.getValue();
+
+        assert.strictEqual(value1, 2, "the result value should be `2`=`((0)+1)*2`")
+    });
 })();

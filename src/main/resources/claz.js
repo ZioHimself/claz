@@ -101,12 +101,12 @@
     function _getPublicMembers(members) {
         return _.reduce(
             members,
-            function(publicMethods, member, memberName) {
+            function(publicMembers, member, memberName) {
                 if(!_.isString(memberName) || /^_/g.test(memberName)) {
-                    return publicMethods
+                    return publicMembers
                 }
-                publicMethods[memberName] = member;
-                return publicMethods
+                publicMembers[memberName] = member;
+                return publicMembers
             },
             {}
         )
@@ -127,62 +127,59 @@
 
     /**
      * (one may read as `with`)
-     * @param {function} baseClas - the class factory function to be augumented
-     * @param {...function} clas - class(es) to be mixed in
+     * @param {function|object} topClasOrMembers - the class factory function to be augumented
+     * @param {...function|...object} clasOrMembers - class(es) or members (multiple) to be mixed in
      * */
-    function wiz(baseClas, clas){
-        if (!_.isFunction(baseClas)) {
-            throw new TypeError("#wiz: baseClas=`"+ baseClas +"` is not a class factory function!")
-        }
-        if (!_isPlainObject(baseClas[_memberzPropName])) {
-            throw new TypeError("#wiz: baseClas=`"+ baseClas +"` baseClas."+ _memberzPropName +"=`"+ baseClas[_memberzPropName] +"` is not the members object!")
-        }
-        //noinspection UnnecessaryLocalVariableJS
+    function wiz(topClasOrMembers, clasOrMembers){
         var _clases = _slice.call(arguments,1);
-        _clases.push(baseClas);
+        _clases.push(topClasOrMembers);
         //noinspection UnnecessaryLocalVariableJS
-        var _methods4Mix = _.chain(_clases)
-                .reduce(
-                    _wizMixinMethodsForClaz,
-                    {}
-                )
-                .reduce(
-                    _wizComposeMethods,
-                    {}
-                )
-                .value(),
-            _members4Mix = _.reduce(
-                _clases,
-                _wizMixinMembersForClaz,
-                {}
-            ),
+        var _methods4Mix = exports._getWizMethods4Mix(_clases),
+            _members4Mix = exports._getWizMembers4Mix(_clases),
             _mixinz = _slice.call(arguments, 1),
             _memberz = _.extend({}, _members4Mix, _methods4Mix),
-            _publicMethods4Mix = _getPublicMembers(_methods4Mix),
-            _proto = _.extend(baseClas.prototype, _publicMethods4Mix, baseClas.prototype);
-        baseClas[_memberzPropName] = _memberz;
-        baseClas[_wizPropName] = _mixinz;
-        baseClas.prototype = _proto;
-        return baseClas
+            resultClas = exports._putMembersToClas(topClasOrMembers, _memberz);
+        resultClas[_wizPropName] = _mixinz;
+        return resultClas
+    }
+    function _getWizMethods4Mix(clases) {
+        return _.chain(clases)
+            .reduce(
+                exports._wizMixinMethodsForClaz,
+                {}
+            )
+            .reduce(
+                exports._wizComposeMethods,
+                {}
+            )
+            .value();
     }
     function _wizMixinMethodsForClaz(methods, clas) {
-        if (!_.isFunction(clas)) {
-            throw new TypeError("#_wizMixinMethodsForClaz clas=`"+ clas +"` is not a class factory function!")
-        }
-        if (!_isPlainObject(clas[_memberzPropName])) {
-            throw new TypeError("#_wizMixinMethodsForClaz clas=`"+ clas +"` clas."+ _memberzPropName +"=`"+ claz[_memberzPropName] +"` is not the members object!")
-        }
+        var members = exports._getMembersFromClazOrMembers(clas);
         methods = _.reduce(
-            clas[_memberzPropName],
-            _wizMixinMethod,
+            members,
+            exports._wizMixinMethod,
             methods
         );
         return methods
     }
-    function _wizMixinMethod(methods, member, memberName) {
-        if (!_.isArray(methods)) {
-            throw new TypeError("#_wizMixinMethod: methods=`"+ methods +"` is not an array!")
+    function _getMembersFromClazOrMembers(clasOrMembers) {
+        if (_.isFunction(clasOrMembers)) {
+            return exports._getMembersFromClaz(clasOrMembers)
         }
+        if (!_isPlainObject(clasOrMembers)) {
+            throw new TypeError("#_getMembersFromClazOrMembers: clasOrMembers=`" + clasOrMembers + "` is not the members object!")
+        }
+        return clasOrMembers;
+    }
+    function _getMembersFromClaz(clas) {
+        var members = clas[_memberzPropName];
+        if (!_isPlainObject(members)) {
+            throw new TypeError("#_getMembersFromClaz: clas=`" + clas + "` clas." + _memberzPropName + "=`" + claz[_memberzPropName] + "` is not the members object!")
+        }
+        return members
+    }
+    function _wizMixinMethod(methods, member, memberName) {
         if (!_.isString(memberName)) {
             throw new TypeError("#_wizMixinMethod: memberName=`"+ memberName +"` is not a string!")
         }
@@ -208,7 +205,7 @@
             composed[methodName] = _.first(methods);
             return composed
         }
-        return _wizComposeMultiMethods(composed, methods, methodName)
+        return exports._wizComposeMultiMethods(composed, methods, methodName)
     }
     function _wizComposeMultiMethods(composed, methods, methodName) {
         if (!_isPlainObject(composed)) {
@@ -220,7 +217,7 @@
         if (!_.isString(methodName)) {
             throw new TypeError("#_wizComposeMethods: methodName=`"+ methodName +"` is not a string!")
         }
-        composed[methodName] = _composeToSingleFunction(methods);
+        composed[methodName] = exports._composeToSingleFunction(methods);
         return composed
     }
     function _composeToSingleFunction(fns) {
@@ -302,16 +299,18 @@
         delete obj[propName];
         return obj
     }
-    function _wizMixinMembersForClaz(members, clas) {
-        if (!_.isFunction(clas)) {
-            throw new TypeError("#_wizMixinMembersForClaz: clas=`"+ clas +"` is not a class factory function!")
-        }
-        if (!_isPlainObject(clas[_memberzPropName])) {
-            throw new TypeError("#_wizMixinMembersForClaz: clas=`"+ clas +"` clas."+ _memberzPropName +"=`"+ claz[_memberzPropName] +"` is not the members object!")
-        }
+    function _getWizMembers4Mix(clases) {
+        return _.reduce(
+            clases,
+            exports._wizMixinMembersForClaz,
+            {}
+        );
+    }
+    function _wizMixinMembersForClaz(members, clasOrMembers) {
+        var memberz = _getMembersFromClazOrMembers(clasOrMembers);
         members = _.reduce(
-            clas[_memberzPropName],
-            _wizMixinMember,
+            memberz,
+            exports._wizMixinMember,
             members
         );
         return members
@@ -328,6 +327,15 @@
         }
         memberz[memberName] = member;
         return memberz
+    }
+    function _putMembersToClas(clas, members) {
+        if (!_.isFunction(clas)) {
+            return exports.claz(members)
+        }
+        var _publicMembers4Mix = exports._getPublicMembers(members);
+        clas[_memberzPropName] = members;
+        clas.prototype = _publicMembers4Mix;
+        return clas
     }
 
     var _ObjProto = Object.prototype,
@@ -346,7 +354,10 @@
             _getPublicMembers: _getPublicMembers,
             _getInitFnOrNull: _getInitFnOrNull,
             _getInitFnFromMembersOrNull: _getInitFnFromMembersOrNull,
+            _getWizMethods4Mix: _getWizMethods4Mix,
             _wizMixinMethodsForClaz: _wizMixinMethodsForClaz,
+            _getMembersFromClazOrMembers: _getMembersFromClazOrMembers,
+            _getMembersFromClaz: _getMembersFromClaz,
             _wizMixinMethod: _wizMixinMethod,
             _wizComposeMethods: _wizComposeMethods,
             _wizComposeMultiMethods: _wizComposeMultiMethods,
@@ -357,8 +368,10 @@
             _overrideProp: _overrideProp,
             _overridePropViaPut: _overridePropViaPut,
             _overridePropViaDelete: _overridePropViaDelete,
+            _getWizMembers4Mix: _getWizMembers4Mix,
             _wizMixinMembersForClaz: _wizMixinMembersForClaz,
-            _wizMixinMember: _wizMixinMember
+            _wizMixinMember: _wizMixinMember,
+            _putMembersToClas: _putMembersToClas
         };
     return exports
 });

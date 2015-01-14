@@ -58,6 +58,35 @@ var albert = Person("Albert", 30);
 
 ```javascript
 
-// TBD
+var IntSupplier = claz.claz(
+    function(int){
+        this._int = int
+    },
+    {
+        getInt: function() {
+            return this._int
+        }
+    }
+);
+var GteZero = claz.claz({
+    getInt: function(){
+        var _int = this.super();
+        if (_int <= 0) {
+            return 0
+        }
+        return _int
+    }
+});
+var Doubling = claz.claz({
+    getInt: function(){
+        return this.super() * 2
+    }
+});
+var DoublingGteZeroIntSupplier = claz.wiz(claz.claz(function(int){ this._int = int }{}), IntSupplier, GteZero, Doubling);
 
+var int1 = DoublingGteZeroIntSupplier(1);
+int1.getInt(); // 2 = (1) * 2 = ((1 <= 0)? 1 : 0) * 2
+
+var int2 = DoublingGteZeroIntSupplier(-1);
+int2.getInt(); // 0 = ((-1 <= 0)? -1 : 0) * 2
 ```

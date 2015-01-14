@@ -125,8 +125,9 @@
             throw new TypeError("#wiz: baseClas=`"+ baseClas +"` baseClas."+ _memberzPropName +"=`"+ baseClas[_memberzPropName] +"` is not the members object!")
         }
         //noinspection UnnecessaryLocalVariableJS
-        var _clases = _.toArray(arguments),
-            _methods4Mix = _.chain(_clases)
+        var _clases = _slice.call(arguments,1);
+        _clases.push(baseClas);
+        var _methods4Mix = _.chain(_clases)
                 .reduce(
                     _wizMixinMethodsForClaz,
                     {}

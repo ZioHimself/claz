@@ -29,84 +29,107 @@
         _fnToString = Function.prototype.toString;
     test('claz.claz returned constructor should have all the public members in the prototype', function(assert) {
         var _members = {
-                foo: function(){}
+                foo: function(){},
+                bar: 1
             },
             _Result = claz.claz(_members);
 
-        var _actualFoo = _Result.prototype.foo;
-        assert.ok(_actualFoo != null, 'actualMember should be defined, _actualFoo=`'+ _actualFoo +'`');
-        var _actualFooStrType = _toString.call(_actualFoo);
-        var _expectedFooStrType = _toString.call(_members.foo);
-        var fooTypesAreEqual = _actualFooStrType === _expectedFooStrType;
-        assert.ok(
-            fooTypesAreEqual,
-            'member types should be equal, ' +
-            '_actualFooStrType=`'+ _actualFooStrType +'`, ' +
-            '_expectedFooStrType=`'+ _expectedFooStrType +'`'
-        );
-        var _actualFooSource = _fnToString.call(_actualFoo);
-        var _expectedFooSource = _fnToString.call(_members.foo);
+        assert.ok(_Result.prototype.foo != null, 'actualMember should be defined, `_Result.prototype.foo`=`'+ _Result.prototype.foo +'`');
+
         assert.strictEqual(
-            _actualFooSource,
-            _expectedFooSource,
+            _toString.call(_Result.prototype.foo),
+            _toString.call(_members.foo),
+            'member stringified types should be equal'
+        );
+
+        assert.strictEqual(
+            typeof (_Result.prototype.foo),
+            typeof (_members.foo),
+            'member types should be equal'
+        );
+
+        assert.strictEqual(
+            _fnToString.call(_Result.prototype.foo),
+            _fnToString.call(_members.foo),
             'foo source should be the same for members.foo and _Result.prototype.foo'
         );
-    });
-    test('claz.claz returned constructor should create objects with all the public variables visible', function(assert) {
-        //noinspection JSUnusedGlobalSymbols
-        var _members = {
-                foo: function(){}
-            },
-            _Result = claz.claz(_members),
-            _result1 = _Result();
 
-        var _actualFoo = _result1.foo;
-        assert.ok(_actualFoo != null, 'actualMember should be defined, _actualFoo=`'+ _actualFoo +'`');
-        var _actualFooStrType = _toString.call(_actualFoo);
-        var _expectedFooStrType = _toString.call(_members.foo);
-        var fooTypesAreEqual = _actualFooStrType === _expectedFooStrType;
-        assert.ok(
-            fooTypesAreEqual,
-            'member types should be equal, ' +
-            '_actualFooStrType=`'+ _actualFooStrType +'`, ' +
-            '_expectedFooStrType=`'+ _expectedFooStrType +'`'
+
+        assert.ok(_Result.prototype.bar != null, 'actualMember should be defined, `_Result.prototype.foo`=`'+ _Result.prototype.foo +'`');
+
+        assert.strictEqual(
+            _toString.call(_Result.prototype.bar),
+            _toString.call(_members.bar),
+            'member stringified types should be equal'
         );
+
+        assert.strictEqual(
+            typeof (_Result.prototype.bar),
+            typeof (_members.bar),
+            'member types should be equal'
+        );
+
+        assert.strictEqual(
+            _Result.prototype.bar,
+            _members.bar,
+            'bar should be the same for members.bar and _Result.prototype.bar'
+        );
+
+
+        assert.ok(_.isUndefined(_Result.prototype._baz), 'actualMember should be undefined, _Result.prototype._baz=`'+ _Result.prototype._baz +'`');
+
+        assert.ok(_.isUndefined(_Result.prototype._qux), 'actualMember should be undefined, _Result.prototype._qux=`'+ _Result.prototype._qux +'`');
     });
-    test('claz.claz returned constructor should have all the private variables invisible', function(assert) {
+    test('claz.claz returned constructor should create objects with all the public variables visible and all the private vars invisible', function(assert) {
         //noinspection JSUnusedGlobalSymbols
         var _members = {
-                _foo: 1,
-                _bar: function(){},
-                baz: 2
-            },
-            _Result = claz.claz(_members);
-
-        var _actualFoo = _Result.prototype._foo;
-        assert.ok(_.isUndefined(_actualFoo), 'actualMember should be undefined, _actualFoo=`'+ _actualFoo +'`');
-
-        var _actualBar = _Result.prototype._bar;
-        assert.ok(_.isUndefined(_actualBar), 'actualMember should be undefined, _actualBar=`'+ _actualBar +'`');
-
-        var _actualBaz = _Result.prototype.baz;
-        assert.ok(_.isUndefined(_actualBaz), 'actualMember should be undefined, _actualBar=`'+ _actualBaz +'`');
-    });
-    test('claz.claz returned constructor should create objects with all the private variables invisible', function(assert) {
-        //noinspection JSUnusedGlobalSymbols
-        var _members = {
-                _foo: 1,
-                _bar: function(){}
+                foo: function(){},
+                bar: 1,
+                _baz: function(){},
+                _qux: 1
             },
             _Result = claz.claz(_members),
             _result1 = _Result();
 
-        var _actualFoo = _result1._foo;
-        assert.ok(_.isUndefined(_actualFoo), 'actualMember should be undefined, _actualFoo=`'+ _actualFoo +'`');
+        assert.ok(_result1.foo != null, 'actualMember should be defined, `_result1.foo`=`'+ _result1.foo +'`');
 
-        var _actualBar = _result1._bar;
-        assert.ok(_.isUndefined(_actualBar), 'actualMember should be undefined, _actualBar=`'+ _actualBar +'`');
+        assert.strictEqual(
+            _toString.call(_result1.foo),
+            _toString.call(_members.foo),
+            'member stringified types should be equal'
+        );
 
-        var _actualBaz = _result1.baz;
-        assert.ok(_.isUndefined(_actualBaz), 'actualMember should be undefined, _actualBar=`'+ _actualBaz +'`');
+        assert.strictEqual(
+            typeof (_result1.foo),
+            typeof (_members.foo),
+            'member types should be equal'
+        );
+
+
+        assert.ok(_result1.bar != null, 'actualMember should be defined, `_result1.bar`=`'+ _result1.bar +'`');
+
+        assert.strictEqual(
+            _toString.call(_result1.bar),
+            _toString.call(_members.bar),
+            'member stringified types should be equal'
+        );
+
+        assert.strictEqual(
+            typeof (_result1.bar),
+            typeof (_members.bar),
+            'member types should be equal'
+        );
+
+        assert.strictEqual(
+            _result1.bar,
+            _members.bar,
+            'bar should be the same for members.bar and _result1.bar'
+        );
+
+
+        assert.ok(_.isUndefined(_result1._baz), 'actualMember should be undefined, _result1._baz=`'+ _result1._baz +'`');
+
+        assert.ok(_.isUndefined(_result1._qux), 'actualMember should be undefined, _result1._qux=`'+ _result1._qux +'`');
     });
     test('claz.claz returned constructor should call passed in initFn', function(assert) {
         assert.expect( 1 );
@@ -172,7 +195,7 @@
         _Result()
     });
     test('claz.claz returned constructor should create objects, which can access private members in their private methods through their public methods', function(assert) {
-        assert.expect( 10 );
+        assert.expect( 7 );
         var _members = {
                 _foo: 1,
                 _bar: function(){
@@ -181,21 +204,12 @@
                 _baz: function(){
                     assert.strictEqual(this._foo, 1, "this._foo=`"+ this._foo +"` should be defined");
                     assert.ok(_.isFunction(this._bar), "this._bar=`"+ this._bar +"` should be a function");
-                    var _actualBarSource = _fnToString.call(this._bar);
-                    var _expectedBarSource = _fnToString.call(_members._bar);
-                    assert.strictEqual(_actualBarSource, _expectedBarSource, "this._bar=`"+ this._bar +"`'s source should be the same as member's `"+ _members._bar +"`");
                     this._bar()
                 },
                 qux: function(){
                     assert.strictEqual(this._foo, 1, "this._foo=`"+ this._foo +"` should be defined");
                     assert.ok(_.isFunction(this._bar), "this._bar=`"+ this._bar +"` should be a function");
-                    var _actualBarSource = _fnToString.call(this._bar);
-                    var _expectedBarSource = _fnToString.call(_members._bar);
-                    assert.strictEqual(_actualBarSource, _expectedBarSource, "this._bar=`"+ this._bar +"`'s source should be the same as member's `"+ _members._bar +"`");
                     assert.ok(_.isFunction(this._baz), "this._baz=`"+ this._baz +"` should be a function");
-                    var _actualBazSource = _fnToString.call(this._baz);
-                    var _expectedBazSource = _fnToString.call(_members._baz);
-                    assert.strictEqual(_actualBazSource, _expectedBazSource, "this._baz=`"+ this._baz +"`'s source should be the same as member's `"+ _members._baz +"`");
                     this._bar();
                     this._baz()
                 }
@@ -251,10 +265,11 @@
             _keysBeforeInvocation = _.keys(_unexpectedPropertyUser),
             _valuesBeforeInvocation = _.values(_unexpectedPropertyUser),
             _overridePropFn = function(){ return "unexpected value!" },
-            actualValue = claz._overridePropOnCall(
-                _unexpectedPropertyUser, 'getValue',
+            _overriddenFn = claz._overridePropOnCall(
+                _unexpectedPropertyUser.getUnexpectedValue, 'getValue',
                 _overridePropFn
             ),
+            actualValue = _overriddenFn.call(_unexpectedPropertyUser),
             _keysAfterInvocation = _.keys(_unexpectedPropertyUser),
             _valuesAfterInvocation = _.values(_unexpectedPropertyUser);
         assert.strictEqual(actualValue, "unexpected value!", "_overridePropDeleteAfterwards should return `unexpected value!` string");
@@ -280,10 +295,11 @@
             _keysBeforeInvocation = _.keys(_unexpectedPropertyUser),
             _valuesBeforeInvocation = _.values(_unexpectedPropertyUser),
             _overridePropFn = function(){ return "unexpected value!" },
-            actualValue = claz._overridePropOnCall(
-                _unexpectedPropertyUser, 'getValue',
+            _fn = claz._overridePropOnCall(
+                _unexpectedPropertyUser.getUnexpectedValue, 'getValue',
                 _overridePropFn
             ),
+            actualValue = _fn.call(_unexpectedPropertyUser),
             _keysAfterInvocation = _.keys(_unexpectedPropertyUser),
             _valuesAfterInvocation = _.values(_unexpectedPropertyUser);
         assert.strictEqual(actualValue, "unexpected value!", "_overridePropDeleteAfterwards should return `unexpected value!` string");

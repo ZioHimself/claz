@@ -51,33 +51,45 @@
         }
 
         var _initFnOrNull = _getInitFnOrNull(initFn, members),
-            _publicMethods = _getPublicMethods(members);
+            _publicMembers = _getPublicMembers(members);
         var Ctor = function (){
             var _members = Ctor[_memberzPropName],
-                _publicMethods = _getPublicMethods(_members),
-                self = _.extend({}, _members);
+                _privateThis = _.extend({}, _members);
             if (_.isFunction(_initFnOrNull)) {
-                _initFnOrNull.apply(self, arguments)
+                _initFnOrNull.apply(_privateThis, arguments)
             }
+            var _getPrivateThis = function(){ return _privateThis },
+                _getPublicThis = function(){ return publicThis };
+            _privateThis = _.reduce(
+                _privateThis,
+                _.partial(_delegateToCopyOfThis, _getPrivateThis, _getPublicThis),
+                {}
+            );
             //noinspection UnnecessaryLocalVariableJS
-            var that = _.reduce(
-                    _publicMethods,
-                    function(publicThis, member, memberName){
-                        publicThis[memberName] = function(){
-                            var _context = _.extend({}, self, that),
-                                _args = _.toArray(arguments);
-                            return member.apply(_context,_args);
-                        };
-                        return publicThis
-                    },
-                    {}
-                );
-            return that
+            var publicThis = _getPublicMembers(_privateThis);
+            return publicThis
         };
 
-        _.extend(Ctor.prototype, _publicMethods);
+        _.extend(Ctor.prototype, _publicMembers);
         Ctor[_memberzPropName] = members;
         return Ctor
+    }
+    function _delegateToCopyOfThis(getPrivateThis, getPublicThis, self, member, memberName){
+        if (!_.isFunction(member)) {
+            self[memberName] = member;
+            return self
+        }
+        self[memberName] = _getDelegatedFn(getPrivateThis, getPublicThis, member);
+        return self
+    }
+    function _getDelegatedFn(getPrivateThis, getPublicThis, member){
+        return function(){
+            var _privateThis = getPrivateThis(),
+                _publicThis = getPublicThis(),
+                _context = _.extend({}, _privateThis, _publicThis),
+                _args = _.toArray(arguments);
+            return member.apply(_context,_args);
+        }
     }
     function _isPlainObject(obj) {
         return _toString.call(obj) === '[object Object]'
@@ -86,14 +98,11 @@
      * @param {object} members - a plain object, containing member definitions - member name as property key and member as property value
      * @returns {object} - a plain object, containing only the keys, which do not start with `_` (underscore character) and the values for those keys are functions
      * */
-    function _getPublicMethods(members) {
+    function _getPublicMembers(members) {
         return _.reduce(
             members,
             function(publicMethods, member, memberName) {
                 if(!_.isString(memberName) || /^_/g.test(memberName)) {
-                    return publicMethods
-                }
-                if (!_.isFunction(member)) {
                     return publicMethods
                 }
                 publicMethods[memberName] = member;
@@ -149,7 +158,7 @@
             ),
             _mixinz = _slice.call(arguments, 1),
             _memberz = _.extend({}, _members4Mix, _methods4Mix),
-            _publicMethods4Mix = _getPublicMethods(_methods4Mix),
+            _publicMethods4Mix = _getPublicMembers(_methods4Mix),
             _proto = _.extend(baseClas.prototype, _publicMethods4Mix, baseClas.prototype);
         baseClas[_memberzPropName] = _memberz;
         baseClas[_wizPropName] = _mixinz;
@@ -334,7 +343,7 @@
 
             /** exposing internals for testing purpose */
             _isPlainObject: _isPlainObject,
-            _getPublicMembers: _getPublicMethods,
+            _getPublicMembers: _getPublicMembers,
             _getInitFnOrNull: _getInitFnOrNull,
             _getInitFnFromMembersOrNull: _getInitFnFromMembersOrNull,
             _wizMixinMethodsForClaz: _wizMixinMethodsForClaz,

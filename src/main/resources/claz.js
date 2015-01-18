@@ -347,15 +347,56 @@
         return clas
     }
 
+    /**
+     * (one may read `implements`)
+     * @param {object} obj -
+     * @param {object|function} clazOrMembers -
+     * @returns {boolean} true, if the `obj` has all the members with the same types as specified by `clazOrMembers`
+     * */
+    function implementz(obj, clazOrMembers) {
+        if (_.isFunction(clazOrMembers) && _.has(clazOrMembers, _memberzPropName)) {
+            return _implementzClaz(obj, clazOrMembers)
+        }
+        return _implementzAbstractIface(obj, clazOrMembers)
+    }
+    function _implementzClaz(obj, claz){
+        var _objMembers = _getAllMembers(obj),
+            _clazMembers = claz[_memberzPropName],
+            _publicMembers = _getPublicMembers(_clazMembers);
+        return _.all(_publicMembers, _.partial(_implementzMemberz, _objMembers))
+    }
+    function _implementzMemberz(objMembers, member, memberName){
+        return _.has(objMembers, memberName) &&
+            typeof objMembers[memberName] === typeof member
+    }
+    function _getAllMembers(obj) {
+        var members = {},
+            _propName;
+        for(_propName in obj) {
+            //noinspection JSUnfilteredForInLoop
+            members[_propName] = obj[_propName]
+        }
+        return members
+    }
+    function _implementzAbstractIface(obj, abstractIface) {
+        if (_.isFunction(abstractIface)) {
+            return _implementzAbstractIface(obj, abstractIface.prototype)
+        }
+        var _objMembers = _getAllMembers(obj),
+            _ifaceMembers = _getAllMembers(abstractIface);
+        return _.all(_ifaceMembers, _.partial(_implementzMemberz, _objMembers))
+    }
+
     var _ObjProto = Object.prototype,
         _toString = _ObjProto.toString,
         _ArrProto = Array.prototype,
         _slice = _ArrProto.slice,
         _push = _ArrProto.push,
+
         _memberzPropName = "memberz",
         _wizPropName = "wiz",
 
-        WizClazBuilder = claz.claz(
+        WizClazBuilder = claz(
             function(clazOrMembers){
                 this.clazOrMembers = clazOrMembers;
                 this.wizMixins = [];
@@ -378,6 +419,8 @@
         exports = {
             claz: claz,
             wiz: wiz,
+            implementz: implementz,
+            implz: implementz,
             WizClazBuilder: WizClazBuilder,
 
             /** exposing internals for testing purpose */
@@ -403,7 +446,11 @@
             _getWizMembers4Mix: _getWizMembers4Mix,
             _wizMixinMembersForClaz: _wizMixinMembersForClaz,
             _wizMixinMember: _wizMixinMember,
-            _putMembersToClas: _putMembersToClas
+            _putMembersToClas: _putMembersToClas,
+            _implementzClaz: _implementzClaz,
+            _implementzMemberz: _implementzMemberz,
+            _getAllMembers: _getAllMembers,
+            _implementzAbstractIface: _implementzAbstractIface
         };
     return exports
 });

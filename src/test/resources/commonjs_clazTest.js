@@ -447,4 +447,78 @@
 
         assert.strictEqual(value1, 2, "the result value should be `2`=`((0)+1)*2`")
     });
+
+    module('claz.implementz');
+    test('claz.implementz should check members presence and types for claz instances', function(assert) {
+        var FooBar = claz.claz({
+                _foo: 1,
+                _bar: function(){},
+                baz: 2,
+                qux: function(){},
+                z: 3
+            }),
+            foo1 = FooBar();
+        assert.ok(claz.implementz(foo1, FooBar), "object, created via claz ctor should return true for implementz");
+
+        var foo2 = FooBar();
+        foo2.baz = function(){};
+        foo2['qux'] = 4;
+        assert.strictEqual(claz.implementz(foo2, FooBar), false, "object, created via claz ctor, but has members re-assigned with other types should return false for implementz");
+
+        var foo3 = {
+            baz: 5,
+            qux: function aha(){ return "AHA!" },
+            z: 6
+        };
+        assert.ok(claz.implementz(foo3, FooBar), "object, which has all the public members from claz should return true for implementz");
+    });
+    test('claz.implementz should check members presence and types for prototypal class instances', function(assert) {
+        var FooBar = function(){};
+        FooBar.prototype.foo = 1;
+        FooBar.prototype.bar = function(){};
+        FooBar.prototype.baz = 2;
+
+        var foo1 = new FooBar();
+        assert.ok(claz.implementz(foo1, FooBar), "object, created via prototypal class constructor should return true for implementz");
+
+        var foo2 = new FooBar();
+        foo2.foo = function(){};
+        foo2['bar'] = 3;
+        assert.strictEqual(claz.implementz(foo2, FooBar), false, "object, created via prototypal class constructor, but has members shadowed by members with other types should return false for implementz");
+
+        var foo3 = {
+            foo: 4,
+            bar: function aha(){ return "AHA!" },
+            baz: 5
+        };
+        assert.ok(claz.implementz(foo3, FooBar), "object, which has all the public members from prototypal class prototype should return true for implementz");
+    });
+    test('claz.implementz should check members presence and types for object interfaces', function(assert) {
+        var FooBar = {
+            foo: 1,
+            bar: function(){},
+            baz: 2
+        };
+
+        var foo1 = {
+            foo: 3,
+            bar: function aha(){ return "AHA!" },
+            baz: 4
+        };
+        assert.ok(claz.implementz(foo1, FooBar), "object, which have all the members like the object interface should return true for implementz");
+
+        var foo2 = {
+            foo: function aha(){ return "AHA!" },
+            bar: 5,
+            baz: 6
+        };
+        assert.strictEqual(claz.implementz(foo2, FooBar), false, "object, which has members some members with other types than the object interface should return false for implementz");
+
+        var foo3 = {
+            foo: 7,
+            bar: function aha(){ return "AHA!" },
+            baz: 8
+        };
+        assert.ok(claz.implementz(foo3, FooBar), "object, which has all the public members from object interface should return true for implementz");
+    });
 })();

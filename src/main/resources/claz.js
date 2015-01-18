@@ -102,7 +102,7 @@
         return _.reduce(
             members,
             function(publicMembers, member, memberName) {
-                if(!_.isString(memberName) || /^_/g.test(memberName)) {
+                if(exports._isPrivateMember(memberName)) {
                     return publicMembers
                 }
                 publicMembers[memberName] = member;
@@ -110,6 +110,9 @@
             },
             {}
         )
+    }
+    function _isPrivateMember(memberName) {
+        return !_.isString(memberName) || memberName.charAt(0) === '_'
     }
     function _getInitFnOrNull(initFnOrNone, members) {
         if (_.isFunction(initFnOrNone)) {
@@ -355,17 +358,33 @@
      * */
     function implementz(obj, clazOrMembers) {
         if (_.isFunction(clazOrMembers) && _.has(clazOrMembers, _memberzPropName)) {
-            return _implementzClaz(obj, clazOrMembers)
+            return exports._implementzClaz(obj, clazOrMembers)
         }
-        return _implementzAbstractIface(obj, clazOrMembers)
+        return exports._implementzAbstractIface(obj, clazOrMembers)
     }
     function _implementzClaz(obj, claz){
-        var _objMembers = _getAllMembers(obj),
+        //try {console.log('#_implementzClaz: obj=`'+ JSON.stringify(obj) +'`, claz=`'+ claz +'`')} catch(err) {}
+        var _objMembers = exports._getAllMembers(obj),
             _clazMembers = claz[_memberzPropName],
-            _publicMembers = _getPublicMembers(_clazMembers);
-        return _.all(_publicMembers, _.partial(_implementzMemberz, _objMembers))
+            _publicMembers = exports._getPublicMembers(_clazMembers);
+        //try {
+        //    var _propName;
+        //    for(_propName in _publicMembers) {
+        //        console.log('#_implementzClaz: ' +
+        //            '`_publicMembers['+ _propName +']`=`'+ _publicMembers[_propName] +'`, ' +
+        //            '`_.has(_publicMembers, '+ _propName +')`=`'+ _.has(_publicMembers, _propName) +'`' +
+        //            '`_ObjProto.hasOwnProperty.call(_publicMembers, '+ _propName +')`=`'+ _ObjProto.hasOwnProperty.call(_publicMembers, _propName) +'`'
+        //        )
+        //    }
+        //} catch(err) { }
+        return _.all(_publicMembers, _.partial(exports._implementzMemberz, _objMembers))
     }
     function _implementzMemberz(objMembers, member, memberName){
+        //try { console.log('#_implementzMemberz: objMembers=`'+ JSON.stringify(objMembers) +'`, member=`'+ member +'`, memberName=`'+ memberName +'`, `typeof objMembers[memberName] === typeof member`=`'+ typeof objMembers[memberName] +' === '+ typeof member +'`') } catch(err) { }
+        //if (!(_.has(objMembers, memberName) &&
+        //    typeof objMembers[memberName] === typeof member)) {
+        //    try { console.error('#_implementzMemberz: memberName=`'+ memberName +'`, this=`'+ JSON.stringify(this) +'`') } catch(err) { }
+        //}
         return _.has(objMembers, memberName) &&
             typeof objMembers[memberName] === typeof member
     }
@@ -380,13 +399,14 @@
     }
     function _implementzAbstractIface(obj, abstractIface) {
         if (_.isFunction(abstractIface)) {
-            return _implementzAbstractIface(obj, abstractIface.prototype)
+            return exports._implementzAbstractIface(obj, abstractIface.prototype)
         }
-        var _objMembers = _getAllMembers(obj),
-            _ifaceMembers = _getAllMembers(abstractIface);
-        return _.all(_ifaceMembers, _.partial(_implementzMemberz, _objMembers))
+        var _objMembers = exports._getAllMembers(obj),
+            _ifaceMembers = exports._getAllMembers(abstractIface);
+        return _.all(_ifaceMembers, _.partial(exports._implementzMemberz, _objMembers))
     }
 
+    //noinspection UnnecessaryLocalVariableJS
     var _ObjProto = Object.prototype,
         _toString = _ObjProto.toString,
         _ArrProto = Array.prototype,
@@ -396,36 +416,16 @@
         _memberzPropName = "memberz",
         _wizPropName = "wiz",
 
-        WizClazBuilder = claz(
-            function(clazOrMembers){
-                this.clazOrMembers = clazOrMembers;
-                this.wizMixins = [];
-            },
-            {
-                wiz: function(clazOrMembers){
-                    var _clasesOrMembers = _.toArray(arguments);
-                    _push.apply(this.wizMixins, _clasesOrMembers);
-                    return this
-                },
-                build: function(){
-                    var _args = [];
-                    _args.push(this.clazOrMembers);
-                    _push.apply(_args, this.wizMixins);
-                    return exports.wiz.apply(_args)
-                }
-            }
-        ),
-
         exports = {
             claz: claz,
             wiz: wiz,
             implementz: implementz,
             implz: implementz,
-            WizClazBuilder: WizClazBuilder,
 
             /** exposing internals for testing purpose */
             _isPlainObject: _isPlainObject,
             _getPublicMembers: _getPublicMembers,
+            _isPrivateMember: _isPrivateMember,
             _getInitFnOrNull: _getInitFnOrNull,
             _getInitFnFromMembersOrNull: _getInitFnFromMembersOrNull,
             _getClasFromClasOrMembers: _getClasFromClasOrMembers,
@@ -451,6 +451,26 @@
             _implementzMemberz: _implementzMemberz,
             _getAllMembers: _getAllMembers,
             _implementzAbstractIface: _implementzAbstractIface
-        };
+        },
+        WizClazBuilder = claz(
+            function(clazOrMembers){
+                this.clazOrMembers = clazOrMembers;
+                this.wizMixins = [];
+            },
+            {
+                wiz: function(clazOrMembers){
+                    var _clasesOrMembers = _.toArray(arguments);
+                    _push.apply(this.wizMixins, _clasesOrMembers);
+                    return this
+                },
+                build: function(){
+                    var _args = [];
+                    _args.push(this.clazOrMembers);
+                    _push.apply(_args, this.wizMixins);
+                    return exports.wiz.apply(_args)
+                }
+            }
+        );
+    exports.WizClazBuilder = WizClazBuilder;
     return exports
 });

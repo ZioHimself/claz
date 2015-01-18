@@ -30,6 +30,16 @@
         </dependency>
       </dependencies>
     </profile>
+    <profile>
+      <id>MVN_QUNIT</id>
+      <dependencies>
+        <dependency>
+          <groupId>com.atlassian.maven.plugins</groupId>
+          <artifactId>qunit-maven-plugin</artifactId>
+          <version>${qunit-maven-plugin.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
   </profiles>
 
   <build>
